@@ -9,12 +9,27 @@ const ProgramDeclTag = enum {
 
 pub const ProgramDecl = union(ProgramDeclTag) {
     fn_: FnDecl,
+
+    pub fn create_fn(
+        name: []const u8,
+        args: std.ArrayList([]const u8),
+        body: std.ArrayList(Stmt),
+        return_type: []const u8,
+    ) ProgramDecl {
+        return  .{ .fn_ = .{
+            .name = name, 
+            .args = args,
+            .body = body,
+            .return_type = return_type,
+        }};
+    }
 };
 
 const FnDecl = struct {
     name: []const u8,
-    args: std.ArrayList(Expr),
+    args: std.ArrayList([]const u8),
     body: std.ArrayList(Stmt),
+    return_type: []const u8,
 };
 
 //////////// Expr structs
@@ -29,7 +44,6 @@ const Expr = union(ExprTag) {
     bool_: BoolExpr,
 };
 
-
 const ArithExpr = struct {
     value: i32,
 };
@@ -43,7 +57,7 @@ const StmtTag = enum {
 };
 
 //////////// Stmt structs
-const Stmt = union(StmtTag) {
+pub const Stmt = union(StmtTag) {
     assign: AssignStmt,
 };
 

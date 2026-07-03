@@ -27,7 +27,7 @@ pub fn main(init: std.process.Init) !void {
         "main.sub",
     );
     var parser = Parser.init(&l, alloc);
-    _ = parser.parse();
+    _ = try parser.parse();
 
     // while (l.next()) {
     //     std.debug.print("token: {}\n", .{l.token});

@@ -168,7 +168,7 @@ pub const Lexer = struct {
         const x_opt = l.next_char();
         if (x_opt == null) {
             l.token = .end;
-            return true;
+            return false;
         }
 
         const x = x_opt.?;

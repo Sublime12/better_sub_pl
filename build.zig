@@ -15,6 +15,9 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(exe);
+
+    const check = b.step("check", "Check if program compiles");
+    check.dependOn(&exe.step);
     const run_step = b.step("run", "Run the app");
     const run_cmd = b.addRunArtifact(exe);
     run_step.dependOn(&run_cmd.step);

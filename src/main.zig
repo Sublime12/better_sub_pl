@@ -1,12 +1,14 @@
 const std = @import("std");
 
 const lexer_pkg = @import("lexer.zig");
+const ast = @import("ast.zig");
 
 const Lexer = lexer_pkg.Lexer;
 
 const LIMIT = 1024 * 10;
 
 pub fn main(init: std.process.Init) !void {
+    _ = ast;
     const io = init.io;
     const alloc = std.heap.page_allocator;
 

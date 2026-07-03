@@ -1,14 +1,16 @@
 const std = @import("std");
 
 const lexer_pkg = @import("lexer.zig");
-const ast = @import("ast.zig");
+const parser_pkg = @import("parser.zig");
+const ast_pkg = @import("ast.zig");
 
 const Lexer = lexer_pkg.Lexer;
+const Parser = parser_pkg.Parser;
 
 const LIMIT = 1024 * 10;
 
 pub fn main(init: std.process.Init) !void {
-    _ = ast;
+    _ = ast_pkg;
     const io = init.io;
     const alloc = std.heap.page_allocator;
 
@@ -24,8 +26,10 @@ pub fn main(init: std.process.Init) !void {
         content,
         "main.sub",
     );
+    var parser = Parser.init(&l, alloc);
+    _ = parser.parse();
 
-    while (l.next()) {
-        std.debug.print("token: {}\n", .{l.token});
-    }
+    // while (l.next()) {
+    //     std.debug.print("token: {}\n", .{l.token});
+    // }
 }

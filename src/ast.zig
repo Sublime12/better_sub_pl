@@ -1,24 +1,34 @@
 const std = @import("std");
 
+//////////// Program Block
+
+const ProgramDeclTag = enum {
+    // struct_,
+    fn_,
+};
+
+pub const ProgramDecl = union(ProgramDeclTag) {
+    fn_: FnDecl,
+};
+
+const FnDecl = struct {
+    name: []const u8,
+    args: std.ArrayList(Expr),
+    body: std.ArrayList(Stmt),
+};
+
 //////////// Expr structs
 
 const ExprTag = enum {
     arith,
     bool_,
-    fn_,
 };
 
 const Expr = union(ExprTag) {
     arith: ArithExpr,
     bool_: BoolExpr,
-    fn_: FnExpr,
 };
 
-const FnExpr = struct {
-    name: []const u8,
-    args: std.ArrayList(Expr),
-    body: std.ArrayList(Stmt),
-};
 
 const ArithExpr = struct {
     value: i32,
@@ -33,7 +43,7 @@ const StmtTag = enum {
 };
 
 //////////// Stmt structs
-const Stmt = union (StmtTag) {
+const Stmt = union(StmtTag) {
     assign: AssignStmt,
 };
 

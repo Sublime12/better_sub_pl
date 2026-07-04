@@ -8,6 +8,7 @@ const Allocator = std.mem.Allocator;
 const ProgramDecl = ast_pkg.ProgramDecl;
 const Stmt = ast_pkg.Stmt;
 const Expr = ast_pkg.Expr;
+const Ast = ast_pkg.Ast;
 
 const panic = std.debug.panic;
 
@@ -24,7 +25,7 @@ pub const Parser = struct {
         };
     }
 
-    pub fn parse(self: *Self) !std.ArrayList(ProgramDecl) {
+    pub fn parse(self: *Self) !Ast {
         self.l.nexti();
         var decls: std.ArrayList(ProgramDecl) = .empty;
         while (self.l.token != .end) {
@@ -32,7 +33,7 @@ pub const Parser = struct {
             try decls.append(self.alloc, expr);
         }
 
-        return decls;
+        return Ast.create(decls);
     }
 
     fn parse_decl(l: *Lexer, alloc: Allocator) !ProgramDecl {

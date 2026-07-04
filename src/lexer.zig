@@ -122,7 +122,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .elseif, .struct_, .fn_, .then, .arrow, .let, .bind, .in => |t| {
+            .else_, .if_, .elseif, .struct_, .var_, .fn_, .then, .arrow, .let, .bind, .in => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
@@ -482,6 +482,7 @@ const TokenKind = enum {
     cbrace,
 
     // keywords
+    var_,
     arrow,
     fn_,
     if_,
@@ -532,6 +533,7 @@ const TokenKind = enum {
             .elseif => "elseif",
             .let => "let",
             .if_ => "if",
+            .var_ => "var",
             .struct_ => "struct",
             .then => "then",
             .bind => "bind",

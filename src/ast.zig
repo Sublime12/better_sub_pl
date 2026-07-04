@@ -16,12 +16,12 @@ pub const ProgramDecl = union(ProgramDeclTag) {
         body: std.ArrayList(Stmt),
         return_type: []const u8,
     ) ProgramDecl {
-        return  .{ .fn_ = .{
-            .name = name, 
+        return .{ .fn_ = .{
+            .name = name,
             .args = args,
             .body = body,
             .return_type = return_type,
-        }};
+        } };
     }
 };
 
@@ -37,11 +37,23 @@ const FnDecl = struct {
 const ExprTag = enum {
     arith,
     bool_,
+    fn_call,
+    str, 
 };
 
-const Expr = union(ExprTag) {
+pub const Expr = union(ExprTag) {
     arith: ArithExpr,
     bool_: BoolExpr,
+    fn_call: FnCallExpr,
+    str: []const u8,
+
+    pub fn create_fn_call(name: []const u8, args: std.ArrayList(Expr)) Expr {
+        return .{ .fn_call = .{ .name = name, .args = args, }};
+    }
+
+    pub fn create_str(content: []const u8) Expr {
+        return .{ .str = content };
+    }
 };
 
 const ArithExpr = struct {
@@ -52,6 +64,11 @@ const BoolExpr = struct {
     value: bool,
 };
 
+const FnCallExpr = struct {
+    name: []const u8,
+    args: std.ArrayList(Expr),
+};
+
 const StmtTag = enum {
     assign,
 };
@@ -59,9 +76,16 @@ const StmtTag = enum {
 //////////// Stmt structs
 pub const Stmt = union(StmtTag) {
     assign: AssignStmt,
+
+    pub fn create_assign(var_: ?[]const u8, value: Expr) Stmt {
+        return .{ .assign = .{
+            .var_ = var_,
+            .value = value,
+        } };
+    }
 };
 
 const AssignStmt = struct {
-    var_: []const u8,
+    var_: ?[]const u8,
     value: Expr,
 };

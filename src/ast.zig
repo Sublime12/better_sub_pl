@@ -11,7 +11,6 @@ pub const Ast = struct {
         return .{ .decls = decls };
     }
 
-
     pub fn print(ast: Ast) void {
         for (ast.decls.items) |decl| {
             decl.print();
@@ -74,7 +73,6 @@ const FnDecl = struct {
         }
 
         std.debug.print("}}", .{});
-
     }
 };
 
@@ -108,9 +106,9 @@ pub const Expr = union(ExprTag) {
 
     pub fn print(self: Self) void {
         switch (self) {
-            .str => |str| { std.debug.print("\"{s}\"", .{str}); },
+            .str => |str| std.debug.print("\"{s}\"", .{str}),
             .fn_call => |fn_call| fn_call.print(),
-            else => { panic("print unimplemented for {}", .{std.meta.activeTag(self)}); },
+            else => panic("print unimplemented for {}", .{std.meta.activeTag(self)}),
         }
     }
 };
@@ -134,7 +132,7 @@ const FnCallExpr = struct {
         for (self.args.items, 0..) |arg, i| {
             arg.print();
             if (i < self.args.items.len - 1) {
-                std.debug.print(", ", .{}); 
+                std.debug.print(", ", .{});
             }
         }
         std.debug.print(")", .{});
@@ -159,7 +157,7 @@ pub const Stmt = union(StmtTag) {
     }
 
     pub fn print(self: Self) void {
-        switch(self) {
+        switch (self) {
             .assign => |assign| assign.print(),
         }
         std.debug.print(";\n", .{});

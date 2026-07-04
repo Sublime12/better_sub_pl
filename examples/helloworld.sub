@@ -1,3 +1,4 @@
 fn main() void {
   print("Helloworld", "maman", "Harold", "Reese",);
+  fn_call("I like to play with people");
 }

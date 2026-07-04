@@ -93,7 +93,6 @@ pub const Parser = struct {
             l.eat(.semicolon);
             const stmt: Stmt = .{ .assign = .{ .var_ = var_name, .value = expr } };
             try body.append(alloc, stmt);
-
         }
         l.eat(.cbrace);
 

@@ -38,7 +38,7 @@ const ExprTag = enum {
     arith,
     bool_,
     fn_call,
-    str, 
+    str,
 };
 
 pub const Expr = union(ExprTag) {
@@ -48,7 +48,10 @@ pub const Expr = union(ExprTag) {
     str: []const u8,
 
     pub fn create_fn_call(name: []const u8, args: std.ArrayList(Expr)) Expr {
-        return .{ .fn_call = .{ .name = name, .args = args, }};
+        return .{ .fn_call = .{
+            .name = name,
+            .args = args,
+        } };
     }
 
     pub fn create_str(content: []const u8) Expr {

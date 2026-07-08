@@ -122,7 +122,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .elseif, .struct_, .var_, .fn_, .then, .arrow, .let, .bind, .in => |t| {
+            .else_, .if_, .elseif, .struct_, .var_, .fn_ => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
@@ -212,13 +212,6 @@ pub const Lexer = struct {
             },
             '-' => {
                 l.clear_append_symbol(x);
-                const n_char = l.current_char();
-                if (n_char == '>') {
-                    _ = l.next_char();
-                    l.name.extend();
-                    l.set_token(.arrow);
-                    return true;
-                }
                 l.set_token(.minus);
                 return true;
             },
@@ -296,11 +289,11 @@ pub const Lexer = struct {
                 _ = l.next_char();
             }
 
-            if (eql("let", l.name.as_str(l.content))) {
-                l.set_token(.let);
-                return true;
-            } else if (eql("if", l.name.as_str(l.content))) {
+            if (eql("if", l.name.as_str(l.content))) {
                 l.set_token(.if_);
+                return true;
+            } else if (eql("var", l.name.as_str(l.content))) {
+                l.set_token(.var_);
                 return true;
             } else if (eql("and", l.name.as_str(l.content))) {
                 l.set_token(.and_);
@@ -308,17 +301,8 @@ pub const Lexer = struct {
             } else if (eql("or", l.name.as_str(l.content))) {
                 l.set_token(.or_);
                 return true;
-            } else if (eql("bind", l.name.as_str(l.content))) {
-                l.set_token(.bind);
-                return true;
-            } else if (eql("in", l.name.as_str(l.content))) {
-                l.set_token(.in);
-                return true;
             } else if (eql("fn", l.name.as_str(l.content))) {
                 l.set_token(.fn_);
-                return true;
-            } else if (eql("then", l.name.as_str(l.content))) {
-                l.set_token(.then);
                 return true;
             } else if (eql("else", l.name.as_str(l.content))) {
                 l.set_token(.else_);
@@ -483,16 +467,11 @@ const TokenKind = enum {
 
     // keywords
     var_,
-    arrow,
     fn_,
     if_,
     elseif,
     else_,
-    let,
     struct_,
-    then,
-    bind,
-    in,
 
     // primary
     int,
@@ -527,17 +506,12 @@ const TokenKind = enum {
             .cparen => ")",
             .obrace => "{",
             .cbrace => "}",
-            .arrow => "->",
             .fn_ => "fn",
             .else_ => "else",
             .elseif => "elseif",
-            .let => "let",
             .if_ => "if",
             .var_ => "var",
             .struct_ => "struct",
-            .then => "then",
-            .bind => "bind",
-            .in => "in",
             .int => "int",
             .float => "float",
             .bool_ => "bool",
@@ -695,9 +669,9 @@ test "lex booleans" {
 
 test "lex if expression" {
     const source_code =
-        \\ if 1 + 3 = 7 then
+        \\ if 1 + 3 = 7
         \\ print_str("" hello "world" "",)
-        \\ elseif true then bonjour
+        \\ elseif true bonjour
         \\ else double(7) ;
     ;
     var l = Lexer.init(source_code, "test.zig");
@@ -730,10 +704,6 @@ test "lex if expression" {
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings("then", l.name.as_str(l.content));
-    try expectEqual(.then, l.token);
-
-    l.nexti();
     try expectStrings("print_str", l.name.as_str(l.content));
     try expectEqual(.id, l.token);
 
@@ -760,10 +730,6 @@ test "lex if expression" {
     l.nexti();
     try expectStrings("true", l.name.as_str(l.content));
     try expectEqual(.bool_, l.token);
-
-    l.nexti();
-    try expectStrings("then", l.name.as_str(l.content));
-    try expectEqual(.then, l.token);
 
     l.nexti();
     try expectStrings("bonjour", l.name.as_str(l.content));
@@ -800,13 +766,9 @@ test "lex if expression" {
 
 test "lex bind and self_fn" {
     const source_code =
-        \\ bind f = x;
+        \\ f = x;
     ;
     var l = Lexer.init(source_code, "test.zig");
-
-    l.nexti();
-    try expectStrings("bind", l.name.as_str(l.content));
-    try expectEqual(.bind, l.token);
 
     l.nexti();
     try expectStrings("f", l.name.as_str(l.content));
@@ -911,13 +873,9 @@ test "lex arithmetic operators and punctuation" {
 
 test "lex core keywords" {
     const source_code =
-        \\ let fn if then else in bind @ . { } { struct @
+        \\ fn if else @ . { } { struct @
     ;
     var l = Lexer.init(source_code, "test.zig");
-
-    l.nexti();
-    try expectStrings("let", l.name.as_str(l.content));
-    try expectEqual(.let, l.token);
 
     l.nexti();
     try expectStrings("fn", l.name.as_str(l.content));
@@ -928,20 +886,8 @@ test "lex core keywords" {
     try expectEqual(.if_, l.token);
 
     l.nexti();
-    try expectStrings("then", l.name.as_str(l.content));
-    try expectEqual(.then, l.token);
-
-    l.nexti();
     try expectStrings("else", l.name.as_str(l.content));
     try expectEqual(.else_, l.token);
-
-    l.nexti();
-    try expectStrings("in", l.name.as_str(l.content));
-    try expectEqual(.in, l.token);
-
-    l.nexti();
-    try expectStrings("bind", l.name.as_str(l.content));
-    try expectEqual(.bind, l.token);
 
     l.nexti();
     try expectStrings("@", l.name.as_str(l.content));

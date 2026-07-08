@@ -190,7 +190,7 @@ const AssignStmt = struct {
     value: Expr,
 
     pub fn print(self: Self) void {
-        std.debug.print("var {s}: {s} = ", .{self.var_, self.type_});
+        std.debug.print("var {s}: {s} = ", .{ self.var_, self.type_ });
         self.value.print();
     }
 };

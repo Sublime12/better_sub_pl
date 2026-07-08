@@ -133,7 +133,6 @@ pub const Parser = struct {
     fn parse_str(l: *Lexer) !Expr {
         const raw_str = l.name.as_str(l.content);
         l.eat(.str);
-        // std.debug.assert(l.token == .str);
         return Expr.create_str(raw_str);
     }
 

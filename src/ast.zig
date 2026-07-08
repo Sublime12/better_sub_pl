@@ -177,7 +177,6 @@ const AssignStmt = struct {
 
     var_: []const u8,
     type_: []const u8,
-    // type_: ?[]const u8,
     value: Expr,
 
     pub fn print(self: Self) void {

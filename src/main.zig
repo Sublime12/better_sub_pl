@@ -36,3 +36,7 @@ pub fn main(init: std.process.Init) !void {
     //     std.debug.print("token: {}\n", .{l.token});
     // }
 }
+
+test {
+    std.testing.refAllDecls(@This());
+}

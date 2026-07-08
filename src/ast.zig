@@ -82,7 +82,6 @@ const ExprTag = enum {
     arith,
     bool_,
     fn_call,
-    var_decl,
     str,
 };
 
@@ -92,7 +91,6 @@ pub const Expr = union(ExprTag) {
     arith: ArithExpr,
     bool_: BoolExpr,
     fn_call: FnCallExpr,
-    var_decl: VarDeclExpr,
     str: []const u8,
 
     pub fn create_fn_call(name: []const u8, args: std.ArrayList(Expr)) Expr {
@@ -104,13 +102,6 @@ pub const Expr = union(ExprTag) {
 
     pub fn create_str(content: []const u8) Expr {
         return .{ .str = content };
-    }
-
-    pub fn create_var_decl_expr(name: []const u8, value: Expr) Expr {
-        return .{ .var_decl = .{
-            .name = name,
-            .value = value,
-        } };
     }
 
     pub fn print(self: Self) void {

@@ -1,0 +1,34 @@
+name: CI
+on:
+  push:
+    paths-ignore:
+      - "doc/**"
+      - "README.md"
+      - "**.md"
+      - "LICENSE**"
+  pull_request:
+    paths-ignore:
+      - "doc/**"
+      - "README.md"
+      - "**.md"
+      - "LICENSE**"
+jobs:
+  x86_64-linux:
+    runs-on: ubuntu-latest
+    env:
+      DISPLAY: ':99.0'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Zig
+        run: |
+          sudo sh -c 'wget -c https://zig.linus.dev/zig/zig-x86_64-linux-0.16.0.tar.xz -O - | tar -xJ --strip-components=1 -C /usr/local/bin'
+      - name: check linting
+        run:
+          zig fmt --check .
+      - name: build execs and tests
+        run:
+          zig build
+      - name: Run tests
+        run:
+          ./zig-out/bin/test

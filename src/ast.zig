@@ -139,8 +139,14 @@ const FnCallExpr = struct {
     }
 };
 
+const VarDeclExpr = struct {
+    name: []const u8,
+    value: *Expr,
+};
+
 const StmtTag = enum {
     assign,
+    no_assign,
 };
 
 //////////// Stmt structs
@@ -148,6 +154,7 @@ pub const Stmt = union(StmtTag) {
     const Self = @This();
 
     assign: AssignStmt,
+    no_assign: NoAssignStmt,
 
     pub fn create_assign(var_: ?[]const u8, value: Expr) Stmt {
         return .{ .assign = .{
@@ -159,6 +166,7 @@ pub const Stmt = union(StmtTag) {
     pub fn print(self: Self) void {
         switch (self) {
             .assign => |assign| assign.print(),
+            .no_assign => |no_assign| no_assign.print(),
         }
         std.debug.print(";\n", .{});
     }
@@ -167,14 +175,21 @@ pub const Stmt = union(StmtTag) {
 const AssignStmt = struct {
     const Self = @This();
 
-    var_: ?[]const u8,
-    // type_: ?[]const u8,
+    var_: []const u8,
+    type_: []const u8,
     value: Expr,
 
     pub fn print(self: Self) void {
-        if (self.var_) |var_| {
-            std.debug.print("var {s} = ", .{var_});
-        }
+        std.debug.print("var {s}: {s} = ", .{ self.var_, self.type_ });
+        self.value.print();
+    }
+};
+
+const NoAssignStmt = struct {
+    const Self = @This();
+    value: Expr,
+
+    pub fn print(self: Self) void {
         self.value.print();
     }
 };

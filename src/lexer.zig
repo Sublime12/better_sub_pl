@@ -130,7 +130,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .paren;
             },
-            .assign, .comma, .dot, .semicolon, .none, .at, .end => |t| {
+            .assign, .comma, .dot, .semicolon, .colon, .none, .at, .end => |t| {
                 l.token = t;
                 l.tokenType = .other;
             },
@@ -263,6 +263,11 @@ pub const Lexer = struct {
             ';' => {
                 l.clear_append_symbol(x);
                 l.set_token(.semicolon);
+                return true;
+            },
+            ':' => {
+                l.clear_append_symbol(x);
+                l.set_token(.colon);
                 return true;
             },
             '@' => {
@@ -484,6 +489,7 @@ const TokenKind = enum {
     comma,
     dot,
     semicolon,
+    colon,
     at,
     none,
     end,
@@ -520,6 +526,7 @@ const TokenKind = enum {
             .comma => ",",
             .dot => ".",
             .semicolon => ";",
+            .colon => ":",
             .at => "@",
             .none => "none",
             .end => "end",

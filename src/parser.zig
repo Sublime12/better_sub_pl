@@ -79,25 +79,41 @@ pub const Parser = struct {
 
         while (l.token != .cbrace) {
             if (l.token == .var_) {
-                panic("var declaration not yet implemented", .{});
                 // var declaration
-                // l.eat(.var_);
-                // l.expect(.id);
-                // const var_name = l.name.as_str(l.content);
-                // l.eat(.id);
-                // l.expect(.ddot);
-
+                const stmt = try parse_var_decl(l, alloc);
+                try body.append(alloc, stmt);
+            } else {
+                const stmt = try parse_no_var_decl(l, alloc);
+                try body.append(alloc, stmt);
             }
-            const var_name: ?[]const u8 = null;
-            const expr = try parse_expr(l, alloc);
-
             l.eat(.semicolon);
-            const stmt: Stmt = .{ .assign = .{ .var_ = var_name, .value = expr } };
-            try body.append(alloc, stmt);
         }
         l.eat(.cbrace);
 
         return ProgramDecl.create_fn(id, args, body, return_type);
+    }
+
+    fn parse_no_var_decl(l: *Lexer, alloc: Allocator) !Stmt {
+        const expr = try parse_expr(l, alloc);
+        return .{ .no_assign = .{ .value = expr } };
+    }
+
+    fn parse_var_decl(l: *Lexer, alloc: Allocator) !Stmt {
+        l.eat(.var_);
+        l.expect(.id);
+        const name = l.name.as_str(l.content);
+        l.eat(.id);
+        l.eat(.colon);
+        l.expect(.id);
+        const type_ = l.name.as_str(l.content);
+        l.eat(.id);
+        l.eat(.assign);
+        const expr = try parse_expr(l, alloc);
+        return .{ .assign = .{
+            .var_ = name,
+            .type_ = type_,
+            .value = expr,
+        } };
     }
 
     fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
@@ -117,7 +133,6 @@ pub const Parser = struct {
     fn parse_str(l: *Lexer) !Expr {
         const raw_str = l.name.as_str(l.content);
         l.eat(.str);
-        // std.debug.assert(l.token == .str);
         return Expr.create_str(raw_str);
     }
 

@@ -669,9 +669,9 @@ test "lex booleans" {
 
 test "lex if expression" {
     const source_code =
-        \\ if 1 + 3 = 7 then
+        \\ if 1 + 3 = 7
         \\ print_str("" hello "world" "",)
-        \\ elseif true then bonjour
+        \\ elseif true bonjour
         \\ else double(7) ;
     ;
     var l = Lexer.init(source_code, "test.zig");
@@ -704,10 +704,6 @@ test "lex if expression" {
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings("then", l.name.as_str(l.content));
-    try expectEqual(.then, l.token);
-
-    l.nexti();
     try expectStrings("print_str", l.name.as_str(l.content));
     try expectEqual(.id, l.token);
 
@@ -734,10 +730,6 @@ test "lex if expression" {
     l.nexti();
     try expectStrings("true", l.name.as_str(l.content));
     try expectEqual(.bool_, l.token);
-
-    l.nexti();
-    try expectStrings("then", l.name.as_str(l.content));
-    try expectEqual(.then, l.token);
 
     l.nexti();
     try expectStrings("bonjour", l.name.as_str(l.content));
@@ -774,13 +766,9 @@ test "lex if expression" {
 
 test "lex bind and self_fn" {
     const source_code =
-        \\ bind f = x;
+        \\ f = x;
     ;
     var l = Lexer.init(source_code, "test.zig");
-
-    l.nexti();
-    try expectStrings("bind", l.name.as_str(l.content));
-    try expectEqual(.bind, l.token);
 
     l.nexti();
     try expectStrings("f", l.name.as_str(l.content));
@@ -885,13 +873,9 @@ test "lex arithmetic operators and punctuation" {
 
 test "lex core keywords" {
     const source_code =
-        \\ let fn if then else in bind @ . { } { struct @
+        \\ fn if else @ . { } { struct @
     ;
     var l = Lexer.init(source_code, "test.zig");
-
-    l.nexti();
-    try expectStrings("let", l.name.as_str(l.content));
-    try expectEqual(.let, l.token);
 
     l.nexti();
     try expectStrings("fn", l.name.as_str(l.content));
@@ -902,20 +886,8 @@ test "lex core keywords" {
     try expectEqual(.if_, l.token);
 
     l.nexti();
-    try expectStrings("then", l.name.as_str(l.content));
-    try expectEqual(.then, l.token);
-
-    l.nexti();
     try expectStrings("else", l.name.as_str(l.content));
     try expectEqual(.else_, l.token);
-
-    l.nexti();
-    try expectStrings("in", l.name.as_str(l.content));
-    try expectEqual(.in, l.token);
-
-    l.nexti();
-    try expectStrings("bind", l.name.as_str(l.content));
-    try expectEqual(.bind, l.token);
 
     l.nexti();
     try expectStrings("@", l.name.as_str(l.content));

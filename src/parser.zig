@@ -78,14 +78,8 @@ pub const Parser = struct {
         l.eat(.obrace);
 
         while (l.token != .cbrace) {
-            if (l.token == .var_) {
-                // var declaration
-                const stmt = try parse_var_decl(l, alloc);
-                try body.append(alloc, stmt);
-            } else {
-                const stmt = try parse_no_var_decl(l, alloc);
-                try body.append(alloc, stmt);
-            }
+            const stmt = try parse_stmt(l, alloc);
+            try body.append(alloc, stmt);
             l.eat(.semicolon);
         }
         l.eat(.cbrace);
@@ -93,12 +87,21 @@ pub const Parser = struct {
         return ProgramDecl.create_fn(id, args, body, return_type);
     }
 
-    fn parse_no_var_decl(l: *Lexer, alloc: Allocator) !Stmt {
+    fn parse_stmt(l: *Lexer, alloc: Allocator) !Stmt {
+        if (l.token == .var_) {
+            // var declaration
+            return parse_var_decl_stmt(l, alloc);
+        } else {
+            return parse_no_var_decl_stmt(l, alloc);
+        }
+    }
+
+    fn parse_no_var_decl_stmt(l: *Lexer, alloc: Allocator) !Stmt {
         const expr = try parse_expr(l, alloc);
         return .{ .no_assign = .{ .value = expr } };
     }
 
-    fn parse_var_decl(l: *Lexer, alloc: Allocator) !Stmt {
+    fn parse_var_decl_stmt(l: *Lexer, alloc: Allocator) !Stmt {
         l.eat(.var_);
         l.expect(.id);
         const name = l.name.as_str(l.content);

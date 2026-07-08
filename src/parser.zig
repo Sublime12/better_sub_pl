@@ -111,7 +111,7 @@ pub const Parser = struct {
             return parse_str(l);
         }
 
-        panic("parse_expr panics with {}", .{l.token});
+        panic("parse_expr panics with {}, name: {s}", .{l.token, l.name.as_str(l.content)});
     }
 
     fn parse_str(l: *Lexer) !Expr {

@@ -122,7 +122,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .elseif, .struct_, .var_, .fn_, .then, .arrow, .let, .bind, .in => |t| {
+            .else_, .if_, .elseif, .struct_, .var_, .fn_ => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
@@ -212,13 +212,6 @@ pub const Lexer = struct {
             },
             '-' => {
                 l.clear_append_symbol(x);
-                const n_char = l.current_char();
-                if (n_char == '>') {
-                    _ = l.next_char();
-                    l.name.extend();
-                    l.set_token(.arrow);
-                    return true;
-                }
                 l.set_token(.minus);
                 return true;
             },
@@ -296,11 +289,11 @@ pub const Lexer = struct {
                 _ = l.next_char();
             }
 
-            if (eql("let", l.name.as_str(l.content))) {
-                l.set_token(.let);
-                return true;
-            } else if (eql("if", l.name.as_str(l.content))) {
+            if (eql("if", l.name.as_str(l.content))) {
                 l.set_token(.if_);
+                return true;
+            } else if (eql("var", l.name.as_str(l.content))) {
+                l.set_token(.var_);
                 return true;
             } else if (eql("and", l.name.as_str(l.content))) {
                 l.set_token(.and_);
@@ -308,17 +301,8 @@ pub const Lexer = struct {
             } else if (eql("or", l.name.as_str(l.content))) {
                 l.set_token(.or_);
                 return true;
-            } else if (eql("bind", l.name.as_str(l.content))) {
-                l.set_token(.bind);
-                return true;
-            } else if (eql("in", l.name.as_str(l.content))) {
-                l.set_token(.in);
-                return true;
             } else if (eql("fn", l.name.as_str(l.content))) {
                 l.set_token(.fn_);
-                return true;
-            } else if (eql("then", l.name.as_str(l.content))) {
-                l.set_token(.then);
                 return true;
             } else if (eql("else", l.name.as_str(l.content))) {
                 l.set_token(.else_);
@@ -483,16 +467,11 @@ const TokenKind = enum {
 
     // keywords
     var_,
-    arrow,
     fn_,
     if_,
     elseif,
     else_,
-    let,
     struct_,
-    then,
-    bind,
-    in,
 
     // primary
     int,
@@ -527,17 +506,12 @@ const TokenKind = enum {
             .cparen => ")",
             .obrace => "{",
             .cbrace => "}",
-            .arrow => "->",
             .fn_ => "fn",
             .else_ => "else",
             .elseif => "elseif",
-            .let => "let",
             .if_ => "if",
             .var_ => "var",
             .struct_ => "struct",
-            .then => "then",
-            .bind => "bind",
-            .in => "in",
             .int => "int",
             .float => "float",
             .bool_ => "bool",

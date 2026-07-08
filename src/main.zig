@@ -15,9 +15,10 @@ pub fn main(init: std.process.Init) !void {
     const alloc = std.heap.page_allocator;
 
     const current_dir = std.Io.Dir.cwd();
+    const file_path = "examples/helloworld.sub";
     const content: []const u8 = try current_dir.readFileAlloc(
         io,
-        "examples/helloworld.sub",
+        file_path,
         alloc,
         .limited(LIMIT),
     );

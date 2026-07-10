@@ -10,11 +10,13 @@ fn main() void {
             var inner_var: Foo = "bonsoir";
         } elseif "else_expr" {
             fn_else("in_fn_else",);
+        } else {
+            print("without condition");
         }
     } elseif best("else_if_expr") {
         bazz("in bazz");
         fuzz("in bazz");
-    } else cond("else_expr") {
+    } else {
         var else_inner: f32 = "for now, expr can just be strings";
     }
 }

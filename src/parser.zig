@@ -153,13 +153,10 @@ pub const Parser = struct {
             try elseif_thens.append(alloc, then);
         }
 
-        var else_eval: ?Expr = null;
         var else_then: ?std.ArrayList(Stmt) = null;
 
-        std.debug.print("HERE : {}\n", .{l.token});
         if (l.token == .else_) {
             l.eat(.else_);
-            else_eval = try parse_expr(l, alloc);
             l.eat(.obrace);
             else_then = .empty;
             while (l.token != .cbrace) {
@@ -174,7 +171,6 @@ pub const Parser = struct {
             if_body,
             elseif_evals,
             elseif_thens,
-            else_eval,
             else_then,
         );
     }

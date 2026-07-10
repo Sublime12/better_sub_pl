@@ -171,7 +171,6 @@ pub const Stmt = union(StmtTag) {
         if_body: std.ArrayList(Stmt),
         elseif_evals: std.ArrayList(Expr),
         elseif_thens: std.ArrayList(std.ArrayList(Stmt)),
-        else_eval: ?Expr,
         else_then: ?std.ArrayList(Stmt),
     ) Stmt {
         return .{ .if_ = .{
@@ -179,7 +178,6 @@ pub const Stmt = union(StmtTag) {
             .if_body = if_body,
             .elseif_evals = elseif_evals,
             .elseif_thens = elseif_thens,
-            .else_eval = else_eval,
             .else_then = else_then,
         } };
     }
@@ -227,7 +225,6 @@ const IfStmt = struct {
     elseif_evals: std.ArrayList(Expr),
     elseif_thens: std.ArrayList(std.ArrayList(Stmt)),
 
-    else_eval: ?Expr,
     else_then: ?std.ArrayList(Stmt),
 
     pub fn print(self: Self, indent: usize) void {
@@ -251,6 +248,17 @@ const IfStmt = struct {
             std.debug.print(" {{\n", .{});
 
             for (then.items) |then_stmt| {
+                then_stmt.print(indent + 1);
+            }
+            print_nindent(indent);
+            std.debug.print("}}", .{});
+        }
+
+        if (self.else_then != null) {
+            const else_then = self.else_then.?;
+
+            std.debug.print(" else {{\n", .{});
+            for (else_then.items) |then_stmt| {
                 then_stmt.print(indent + 1);
             }
             print_nindent(indent);

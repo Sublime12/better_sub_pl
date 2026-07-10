@@ -80,19 +80,25 @@ pub const Parser = struct {
         while (l.token != .cbrace) {
             const stmt = try parse_stmt(l, alloc);
             try body.append(alloc, stmt);
-            l.eat(.semicolon);
+            // l.eat(.semicolon);
         }
         l.eat(.cbrace);
 
         return ProgramDecl.create_fn(id, args, body, return_type);
     }
 
-    fn parse_stmt(l: *Lexer, alloc: Allocator) !Stmt {
+    fn parse_stmt(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Stmt {
         if (l.token == .var_) {
             // var declaration
-            return parse_var_decl_stmt(l, alloc);
+            const stmt = parse_var_decl_stmt(l, alloc);
+            l.eat(.semicolon);
+            return stmt;
+        } else if (l.token == .if_) {
+            return parse_if_stmt(l, alloc);
         } else {
-            return parse_no_var_decl_stmt(l, alloc);
+            const stmt = parse_no_var_decl_stmt(l, alloc);
+            l.eat(.semicolon);
+            return stmt;
         }
     }
 
@@ -119,6 +125,20 @@ pub const Parser = struct {
         } };
     }
 
+    fn parse_if_stmt(l: *Lexer, alloc: Allocator) !Stmt {
+        l.eat(.if_);
+        const if_eval = try parse_expr(l, alloc);
+        l.eat(.obrace);
+        var if_body: std.ArrayList(Stmt) = .empty;
+        while (l.token != .cbrace) {
+            const stmt = try parse_stmt(l, alloc);
+            try if_body.append(alloc, stmt);
+            // l.eat(.semicolon);
+        }
+        l.eat(.cbrace);
+        return Stmt.create_if(if_eval, if_body);
+    }
+
     fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         if (l.token == .id) {
             const next_l = l.nextl();
@@ -128,8 +148,7 @@ pub const Parser = struct {
             }
         } else if (l.token == .str) {
             return parse_str(l);
-        }
-
+        } 
         panic("parse_expr panics with {}, name: {s}", .{ l.token, l.name.as_str(l.content) });
     }
 

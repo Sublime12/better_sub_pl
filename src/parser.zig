@@ -128,15 +128,44 @@ pub const Parser = struct {
     fn parse_if_stmt(l: *Lexer, alloc: Allocator) !Stmt {
         l.eat(.if_);
         const if_eval = try parse_expr(l, alloc);
-        l.eat(.obrace);
         var if_body: std.ArrayList(Stmt) = .empty;
+        l.eat(.obrace);
         while (l.token != .cbrace) {
             const stmt = try parse_stmt(l, alloc);
             try if_body.append(alloc, stmt);
-            // l.eat(.semicolon);
         }
         l.eat(.cbrace);
-        return Stmt.create_if(if_eval, if_body);
+        var elseif_evals: std.ArrayList(Expr) = .empty;
+        var elseif_thens: std.ArrayList(std.ArrayList(Stmt)) = .empty;
+        
+        std.debug.print("token is {}\n", .{l.token});
+        while (l.token == .elseif) {
+            // std.debug.print("In while {}\n", .{l.token});
+            l.eat(.elseif);
+            const eval = try parse_expr(l, alloc);
+    
+            // std.debug.print("else if cond: \n", .{});
+            // eval.print();
+            var then: std.ArrayList(Stmt) = .empty;
+            l.eat(.obrace);
+            while (l.token != .cbrace) {
+                const stmt = try parse_stmt(l, alloc);
+                try then.append(alloc, stmt);
+            }
+            l.eat(.cbrace);
+            try elseif_evals.append(alloc, eval);
+            try elseif_thens.append(alloc, then);
+        }
+        // std.debug.print("token AFTER is {}\n", .{l.token});
+
+        return Stmt.create_if(
+            if_eval,
+            if_body,
+            elseif_evals,
+            elseif_thens,
+            null,
+            null,
+        );
     }
 
     fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {

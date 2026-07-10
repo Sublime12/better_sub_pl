@@ -165,10 +165,21 @@ pub const Stmt = union(StmtTag) {
         } };
     }
 
-    pub fn create_if(if_eval: Expr, if_body: std.ArrayList(Stmt)) Stmt {
+    pub fn create_if(
+        if_eval: Expr,
+        if_body: std.ArrayList(Stmt),
+        elseif_evals: std.ArrayList(Expr),
+        elseif_thens: std.ArrayList(std.ArrayList(Stmt)),
+        else_eval: ?Expr,
+        else_then: ?std.ArrayList(Stmt),
+    ) Stmt {
         return .{ .if_ = .{
             .if_eval = if_eval,
             .if_body = if_body,
+            .elseif_evals = elseif_evals,
+            .elseif_thens = elseif_thens,
+            .else_eval = else_eval,
+            .else_then = else_then,
         } };
     }
 
@@ -211,6 +222,12 @@ const IfStmt = struct {
 
     if_eval: Expr,
     if_body: std.ArrayList(Stmt),
+
+    elseif_evals: std.ArrayList(Expr),
+    elseif_thens: std.ArrayList(std.ArrayList(Stmt)),
+
+    else_eval: ?Expr,
+    else_then: ?std.ArrayList(Stmt),
 
     pub fn print(self: Self, indent: usize) void {
         print_nindent(indent);

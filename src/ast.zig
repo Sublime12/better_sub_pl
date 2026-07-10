@@ -188,7 +188,7 @@ pub const Stmt = union(StmtTag) {
             .no_assign => |no_assign| no_assign.print(indent),
             .if_ => |if_| if_.print(indent),
         }
-        std.debug.print(";\n", .{});
+        std.debug.print("\n", .{});
     }
 };
 
@@ -203,6 +203,7 @@ const AssignStmt = struct {
         print_nindent(indent);
         std.debug.print("var {s}: {s} = ", .{ self.var_, self.type_ });
         self.value.print();
+        std.debug.print(";", .{});
     }
 };
 
@@ -213,6 +214,7 @@ const NoAssignStmt = struct {
     pub fn print(self: Self, indent: usize) void {
         print_nindent(indent);
         self.value.print();
+        std.debug.print(";", .{});
     }
 };
 

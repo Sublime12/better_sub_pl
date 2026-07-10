@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const panic = std.debug.panic;
+const assert = std.debug.assert;
 
 //////////// Program Block
 
@@ -239,6 +240,23 @@ const IfStmt = struct {
         }
         print_nindent(indent);
         std.debug.print("}}", .{});
+
+        assert(self.elseif_evals.items.len == self.elseif_thens.items.len);
+        for (0..self.elseif_evals.items.len) |i| {
+            const eval = self.elseif_evals.items[i];
+            const then = self.elseif_thens.items[i];
+
+            // print_nindent(indent);
+            std.debug.print(" elseif ", .{});
+            eval.print();
+            std.debug.print(" {{\n", .{});
+            
+            for (then.items) |then_stmt| {
+                then_stmt.print(indent + 1);
+            }
+            print_nindent(indent);
+            std.debug.print("}}", .{});
+        }
     }
 };
 

@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const panic = std.debug.panic;
+const assert = std.debug.assert;
 
 //////////// Program Block
 
@@ -13,7 +14,7 @@ pub const Ast = struct {
 
     pub fn print(ast: Ast) void {
         for (ast.decls.items) |decl| {
-            decl.print();
+            decl.print(0);
             std.debug.print("\n\n", .{});
         }
     }
@@ -43,9 +44,9 @@ pub const ProgramDecl = union(ProgramDeclTag) {
         } };
     }
 
-    pub fn print(self: Self) void {
+    pub fn print(self: Self, nindent: usize) void {
         switch (self) {
-            .fn_decl => |fn_decl| fn_decl.print(),
+            .fn_decl => |fn_decl| fn_decl.print(nindent),
         }
     }
 };
@@ -58,20 +59,20 @@ const FnDecl = struct {
     body: std.ArrayList(Stmt),
     return_type: []const u8,
 
-    pub fn print(self: Self) void {
+    pub fn print(self: Self, indent: usize) void {
+        print_nindent(indent);
         std.debug.print("fn {s}(", .{self.name});
         for (self.args.items) |arg| {
             std.debug.print("{s}, ", .{arg});
         }
 
         std.debug.print(") {s} {{\n", .{self.return_type});
-        const indent = 1;
 
         for (self.body.items) |stmt| {
-            print_nindent(indent);
-            stmt.print();
+            stmt.print(indent + 1);
         }
 
+        print_nindent(indent);
         std.debug.print("}}", .{});
     }
 };
@@ -147,6 +148,7 @@ const VarDeclExpr = struct {
 const StmtTag = enum {
     assign,
     no_assign,
+    if_,
 };
 
 //////////// Stmt structs
@@ -155,6 +157,7 @@ pub const Stmt = union(StmtTag) {
 
     assign: AssignStmt,
     no_assign: NoAssignStmt,
+    if_: IfStmt,
 
     pub fn create_assign(var_: ?[]const u8, value: Expr) Stmt {
         return .{ .assign = .{
@@ -163,12 +166,29 @@ pub const Stmt = union(StmtTag) {
         } };
     }
 
-    pub fn print(self: Self) void {
+    pub fn create_if(
+        if_eval: Expr,
+        if_body: std.ArrayList(Stmt),
+        elseif_evals: std.ArrayList(Expr),
+        elseif_thens: std.ArrayList(std.ArrayList(Stmt)),
+        else_then: ?std.ArrayList(Stmt),
+    ) Stmt {
+        return .{ .if_ = .{
+            .if_eval = if_eval,
+            .if_body = if_body,
+            .elseif_evals = elseif_evals,
+            .elseif_thens = elseif_thens,
+            .else_then = else_then,
+        } };
+    }
+
+    pub fn print(self: Self, indent: usize) void {
         switch (self) {
-            .assign => |assign| assign.print(),
-            .no_assign => |no_assign| no_assign.print(),
+            .assign => |assign| assign.print(indent),
+            .no_assign => |no_assign| no_assign.print(indent),
+            .if_ => |if_| if_.print(indent),
         }
-        std.debug.print(";\n", .{});
+        std.debug.print("\n", .{});
     }
 };
 
@@ -179,9 +199,11 @@ const AssignStmt = struct {
     type_: []const u8,
     value: Expr,
 
-    pub fn print(self: Self) void {
+    pub fn print(self: Self, indent: usize) void {
+        print_nindent(indent);
         std.debug.print("var {s}: {s} = ", .{ self.var_, self.type_ });
         self.value.print();
+        std.debug.print(";", .{});
     }
 };
 
@@ -189,13 +211,66 @@ const NoAssignStmt = struct {
     const Self = @This();
     value: Expr,
 
-    pub fn print(self: Self) void {
+    pub fn print(self: Self, indent: usize) void {
+        print_nindent(indent);
         self.value.print();
+        std.debug.print(";", .{});
+    }
+};
+
+const IfStmt = struct {
+    const Self = @This();
+
+    if_eval: Expr,
+    if_body: std.ArrayList(Stmt),
+
+    elseif_evals: std.ArrayList(Expr),
+    elseif_thens: std.ArrayList(std.ArrayList(Stmt)),
+
+    else_then: ?std.ArrayList(Stmt),
+
+    pub fn print(self: Self, indent: usize) void {
+        print_nindent(indent);
+        std.debug.print("if ", .{});
+        self.if_eval.print();
+        std.debug.print(" {{\n", .{});
+        for (self.if_body.items) |stmt| {
+            stmt.print(indent + 1);
+        }
+        print_nindent(indent);
+        std.debug.print("}}", .{});
+
+        assert(self.elseif_evals.items.len == self.elseif_thens.items.len);
+        for (0..self.elseif_evals.items.len) |i| {
+            const eval = self.elseif_evals.items[i];
+            const then = self.elseif_thens.items[i];
+
+            std.debug.print(" elseif ", .{});
+            eval.print();
+            std.debug.print(" {{\n", .{});
+
+            for (then.items) |then_stmt| {
+                then_stmt.print(indent + 1);
+            }
+            print_nindent(indent);
+            std.debug.print("}}", .{});
+        }
+
+        if (self.else_then != null) {
+            const else_then = self.else_then.?;
+
+            std.debug.print(" else {{\n", .{});
+            for (else_then.items) |then_stmt| {
+                then_stmt.print(indent + 1);
+            }
+            print_nindent(indent);
+            std.debug.print("}}", .{});
+        }
     }
 };
 
 fn print_nindent(n: usize) void {
     for (0..n) |_| {
-        std.debug.print("  ", .{});
+        std.debug.print("    ", .{});
     }
 }

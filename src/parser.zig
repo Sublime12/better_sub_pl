@@ -137,15 +137,11 @@ pub const Parser = struct {
         l.eat(.cbrace);
         var elseif_evals: std.ArrayList(Expr) = .empty;
         var elseif_thens: std.ArrayList(std.ArrayList(Stmt)) = .empty;
-        
-        std.debug.print("token is {}\n", .{l.token});
+
         while (l.token == .elseif) {
-            // std.debug.print("In while {}\n", .{l.token});
             l.eat(.elseif);
             const eval = try parse_expr(l, alloc);
-    
-            // std.debug.print("else if cond: \n", .{});
-            // eval.print();
+
             var then: std.ArrayList(Stmt) = .empty;
             l.eat(.obrace);
             while (l.token != .cbrace) {
@@ -156,15 +152,30 @@ pub const Parser = struct {
             try elseif_evals.append(alloc, eval);
             try elseif_thens.append(alloc, then);
         }
-        // std.debug.print("token AFTER is {}\n", .{l.token});
+
+        var else_eval: ?Expr = null;
+        var else_then: ?std.ArrayList(Stmt) = null;
+
+        std.debug.print("HERE : {}\n", .{l.token});
+        if (l.token == .else_) {
+            l.eat(.else_);
+            else_eval = try parse_expr(l, alloc);
+            l.eat(.obrace);
+            else_then = .empty;
+            while (l.token != .cbrace) {
+                const stmt = try parse_stmt(l, alloc);
+                try else_then.?.append(alloc, stmt);
+            }
+            l.eat(.cbrace);
+        }
 
         return Stmt.create_if(
             if_eval,
             if_body,
             elseif_evals,
             elseif_thens,
-            null,
-            null,
+            else_eval,
+            else_then,
         );
     }
 

@@ -246,11 +246,10 @@ const IfStmt = struct {
             const eval = self.elseif_evals.items[i];
             const then = self.elseif_thens.items[i];
 
-            // print_nindent(indent);
             std.debug.print(" elseif ", .{});
             eval.print();
             std.debug.print(" {{\n", .{});
-            
+
             for (then.items) |then_stmt| {
                 then_stmt.print(indent + 1);
             }

@@ -148,7 +148,7 @@ pub const Parser = struct {
             }
         } else if (l.token == .str) {
             return parse_str(l);
-        } 
+        }
         panic("parse_expr panics with {}, name: {s}", .{ l.token, l.name.as_str(l.content) });
     }
 

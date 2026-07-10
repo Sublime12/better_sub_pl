@@ -169,7 +169,7 @@ pub const Stmt = union(StmtTag) {
         return .{ .if_ = .{
             .if_eval = if_eval,
             .if_body = if_body,
-        }};
+        } };
     }
 
     pub fn print(self: Self, indent: usize) void {

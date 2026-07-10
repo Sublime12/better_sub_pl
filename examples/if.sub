@@ -11,7 +11,10 @@ fn main() void {
         } elseif "else_expr" {
             fn_else("in_fn_else",);
         }
-    } elseif "else_if_expr" {
+    } elseif best("else_if_expr") {
         bazz("in bazz");
+        fuzz("in bazz");
+    } else cond("else_expr") {
+        var else_inner: f32 = "for now, expr can just be strings";
     }
 }

@@ -32,7 +32,7 @@ pub const ProgramDecl = union(ProgramDeclTag) {
 
     pub fn create_fn(
         name: []const u8,
-        args: std.ArrayList([]const u8),
+        args: std.ArrayList(Arg),
         body: BlockStmt,
         return_type: []const u8,
     ) ProgramDecl {
@@ -55,15 +55,16 @@ const FnDecl = struct {
     const Self = @This();
 
     name: []const u8,
-    args: std.ArrayList([]const u8),
+    args: std.ArrayList(Arg),
     body: BlockStmt,
     return_type: []const u8,
 
     pub fn print(self: Self, indent: usize) void {
         print_nindent(indent);
         std.debug.print("fn {s}(", .{self.name});
-        for (self.args.items) |arg| {
-            std.debug.print("{s}, ", .{arg});
+        for (self.args.items, 0..) |arg, i| {
+            std.debug.print("{s}: {s}", .{arg.name, arg.type_});
+            if (i < self.args.items.len - 1) std.debug.print(", ", .{});
         }
 
         std.debug.print(") {s} {{\n", .{self.return_type});
@@ -75,6 +76,11 @@ const FnDecl = struct {
         print_nindent(indent);
         std.debug.print("}}", .{});
     }
+};
+
+pub const Arg = struct {
+    name: []const u8,
+    type_: []const u8,
 };
 
 pub const BlockStmt = struct {

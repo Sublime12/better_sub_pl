@@ -10,6 +10,7 @@ const Stmt = ast_pkg.Stmt;
 const BlockStmt = ast_pkg.BlockStmt;
 const Expr = ast_pkg.Expr;
 const Ast = ast_pkg.Ast;
+const Arg = ast_pkg.Arg;
 
 const panic = std.debug.panic;
 
@@ -50,14 +51,20 @@ pub const Parser = struct {
         // parse fn signature
         l.expect(.id);
         const id = l.name.as_str(l.content);
-        var args: std.ArrayList([]const u8) = .empty;
+        var args: std.ArrayList(Arg) = .empty;
         l.eat(.id);
 
         l.eat(.oparen);
         while (l.token != .cparen) {
             l.expect(.id);
-            const arg = l.name.as_str(l.content);
-            l.nexti();
+            const arg_name = l.name.as_str(l.content);
+            l.eat(.id);
+
+            l.eat(.colon);
+            l.expect(.id);
+            const type_ = l.name.as_str(l.content);
+            l.eat(.id);
+            const arg: Arg = .{ .name = arg_name, .type_ = type_ };
 
             try args.append(alloc, arg);
 

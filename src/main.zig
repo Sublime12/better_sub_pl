@@ -4,7 +4,8 @@ const lexer_pkg = @import("lexer.zig");
 const parser_pkg = @import("parser.zig");
 
 const Lexer = lexer_pkg.Lexer;
-const Parser = parser_pkg.Parser;
+
+const parse = parser_pkg.parse;
 
 const LIMIT = 1024 * 10;
 
@@ -30,8 +31,8 @@ pub fn main(init: std.process.Init) !void {
         content,
         file_path,
     );
-    var parser = Parser.init(&l, alloc);
-    const ast = try parser.parse();
+
+    const ast = try parse(&l, alloc);
 
     ast.print();
 

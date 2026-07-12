@@ -60,6 +60,10 @@ pub const Lexer = struct {
         };
     }
 
+    pub fn reset(l: *Lexer) void {
+        l.* = Lexer.init(l.content, l.file_path);
+    }
+
     pub fn eat(l: *Lexer, token: TokenKind) void {
         l.expect(token);
         l.nexti();

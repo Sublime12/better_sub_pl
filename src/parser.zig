@@ -164,6 +164,9 @@ fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
             // fn call
             return parse_fn_call_expr(l, alloc);
         }
+        const name = l.name.as_str(l.content);
+        l.eat(.id);
+        return Expr.create_var(name);
     } else if (l.token == .str) {
         return parse_str(l);
     }

@@ -3,7 +3,6 @@ const builtin = @import("builtin");
 
 const eql = std.ascii.eqlIgnoreCase;
 const panic = std.debug.panic;
-const print = std.debug.print;
 
 const expectStrings = std.testing.expectEqualStrings;
 const expectEqual = std.testing.expectEqual;

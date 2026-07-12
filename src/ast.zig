@@ -150,11 +150,6 @@ const FnCallExpr = struct {
     }
 };
 
-const VarDeclExpr = struct {
-    name: []const u8,
-    value: *Expr,
-};
-
 const StmtTag = enum {
     assign,
     no_assign,

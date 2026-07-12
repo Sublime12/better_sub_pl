@@ -63,7 +63,7 @@ const FnDecl = struct {
         print_nindent(indent);
         std.debug.print("fn {s}(", .{self.name});
         for (self.args.items, 0..) |arg, i| {
-            std.debug.print("{s}: {s}", .{arg.name, arg.type_});
+            std.debug.print("{s}: {s}", .{ arg.name, arg.type_ });
             if (i < self.args.items.len - 1) std.debug.print(", ", .{});
         }
 

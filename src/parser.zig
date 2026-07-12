@@ -7,6 +7,7 @@ const Lexer = lexer_pkg.Lexer;
 const Allocator = std.mem.Allocator;
 const ProgramDecl = ast_pkg.ProgramDecl;
 const Stmt = ast_pkg.Stmt;
+const BlockStmt = ast_pkg.BlockStmt;
 const Expr = ast_pkg.Expr;
 const Ast = ast_pkg.Ast;
 
@@ -84,7 +85,7 @@ pub const Parser = struct {
         }
         l.eat(.cbrace);
 
-        return ProgramDecl.create_fn(id, args, body, return_type);
+        return ProgramDecl.create_fn(id, args, .{ .stmts = body }, return_type);
     }
 
     fn parse_stmt(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Stmt {
@@ -136,7 +137,7 @@ pub const Parser = struct {
         }
         l.eat(.cbrace);
         var elseif_evals: std.ArrayList(Expr) = .empty;
-        var elseif_thens: std.ArrayList(std.ArrayList(Stmt)) = .empty;
+        var elseif_thens: std.ArrayList(BlockStmt) = .empty;
 
         while (l.token == .elseif) {
             l.eat(.elseif);
@@ -150,25 +151,25 @@ pub const Parser = struct {
             }
             l.eat(.cbrace);
             try elseif_evals.append(alloc, eval);
-            try elseif_thens.append(alloc, then);
+            try elseif_thens.append(alloc, .{ .stmts = then });
         }
 
-        var else_then: ?std.ArrayList(Stmt) = null;
+        var else_then: ?BlockStmt = null;
 
         if (l.token == .else_) {
             l.eat(.else_);
             l.eat(.obrace);
-            else_then = .empty;
+            else_then = .{ .stmts =  .empty };
             while (l.token != .cbrace) {
                 const stmt = try parse_stmt(l, alloc);
-                try else_then.?.append(alloc, stmt);
+                try else_then.?.stmts.append(alloc, stmt);
             }
             l.eat(.cbrace);
         }
 
         return Stmt.create_if(
             if_eval,
-            if_body,
+            .{ .stmts = if_body },
             elseif_evals,
             elseif_thens,
             else_then,

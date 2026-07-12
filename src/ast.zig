@@ -125,6 +125,7 @@ pub const Expr = union(ExprTag) {
         switch (self) {
             .str => |str| std.debug.print("\"{s}\"", .{str}),
             .fn_call => |fn_call| fn_call.print(),
+            .var_ => |var_| std.debug.print("{s}", .{var_}),
             else => panic("print unimplemented for {}", .{std.meta.activeTag(self)}),
         }
     }

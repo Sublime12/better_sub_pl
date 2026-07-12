@@ -2,7 +2,6 @@ const std = @import("std");
 
 const lexer_pkg = @import("lexer.zig");
 const parser_pkg = @import("parser.zig");
-const ast_pkg = @import("ast.zig");
 
 const Lexer = lexer_pkg.Lexer;
 const Parser = parser_pkg.Parser;

@@ -32,8 +32,8 @@ pub const ProgramDecl = union(ProgramDeclTag) {
 
     pub fn create_fn(
         name: []const u8,
-        args: std.ArrayList([]const u8),
-        body: std.ArrayList(Stmt),
+        args: std.ArrayList(Arg),
+        body: BlockStmt,
         return_type: []const u8,
     ) ProgramDecl {
         return .{ .fn_decl = .{
@@ -55,26 +55,36 @@ const FnDecl = struct {
     const Self = @This();
 
     name: []const u8,
-    args: std.ArrayList([]const u8),
-    body: std.ArrayList(Stmt),
+    args: std.ArrayList(Arg),
+    body: BlockStmt,
     return_type: []const u8,
 
     pub fn print(self: Self, indent: usize) void {
         print_nindent(indent);
         std.debug.print("fn {s}(", .{self.name});
-        for (self.args.items) |arg| {
-            std.debug.print("{s}, ", .{arg});
+        for (self.args.items, 0..) |arg, i| {
+            std.debug.print("{s}: {s}", .{ arg.name, arg.type_ });
+            if (i < self.args.items.len - 1) std.debug.print(", ", .{});
         }
 
         std.debug.print(") {s} {{\n", .{self.return_type});
 
-        for (self.body.items) |stmt| {
+        for (self.body.stmts.items) |stmt| {
             stmt.print(indent + 1);
         }
 
         print_nindent(indent);
         std.debug.print("}}", .{});
     }
+};
+
+pub const Arg = struct {
+    name: []const u8,
+    type_: []const u8,
+};
+
+pub const BlockStmt = struct {
+    stmts: std.ArrayList(Stmt),
 };
 
 //////////// Expr structs
@@ -140,11 +150,6 @@ const FnCallExpr = struct {
     }
 };
 
-const VarDeclExpr = struct {
-    name: []const u8,
-    value: *Expr,
-};
-
 const StmtTag = enum {
     assign,
     no_assign,
@@ -168,10 +173,10 @@ pub const Stmt = union(StmtTag) {
 
     pub fn create_if(
         if_eval: Expr,
-        if_body: std.ArrayList(Stmt),
+        if_body: BlockStmt,
         elseif_evals: std.ArrayList(Expr),
-        elseif_thens: std.ArrayList(std.ArrayList(Stmt)),
-        else_then: ?std.ArrayList(Stmt),
+        elseif_thens: std.ArrayList(BlockStmt),
+        else_then: ?BlockStmt,
     ) Stmt {
         return .{ .if_ = .{
             .if_eval = if_eval,
@@ -222,19 +227,19 @@ const IfStmt = struct {
     const Self = @This();
 
     if_eval: Expr,
-    if_body: std.ArrayList(Stmt),
+    if_body: BlockStmt,
 
     elseif_evals: std.ArrayList(Expr),
-    elseif_thens: std.ArrayList(std.ArrayList(Stmt)),
+    elseif_thens: std.ArrayList(BlockStmt),
 
-    else_then: ?std.ArrayList(Stmt),
+    else_then: ?BlockStmt,
 
     pub fn print(self: Self, indent: usize) void {
         print_nindent(indent);
         std.debug.print("if ", .{});
         self.if_eval.print();
         std.debug.print(" {{\n", .{});
-        for (self.if_body.items) |stmt| {
+        for (self.if_body.stmts.items) |stmt| {
             stmt.print(indent + 1);
         }
         print_nindent(indent);
@@ -249,7 +254,7 @@ const IfStmt = struct {
             eval.print();
             std.debug.print(" {{\n", .{});
 
-            for (then.items) |then_stmt| {
+            for (then.stmts.items) |then_stmt| {
                 then_stmt.print(indent + 1);
             }
             print_nindent(indent);
@@ -260,7 +265,7 @@ const IfStmt = struct {
             const else_then = self.else_then.?;
 
             std.debug.print(" else {{\n", .{});
-            for (else_then.items) |then_stmt| {
+            for (else_then.stmts.items) |then_stmt| {
                 then_stmt.print(indent + 1);
             }
             print_nindent(indent);

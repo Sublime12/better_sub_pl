@@ -7,8 +7,10 @@ const Lexer = lexer_pkg.Lexer;
 const Allocator = std.mem.Allocator;
 const ProgramDecl = ast_pkg.ProgramDecl;
 const Stmt = ast_pkg.Stmt;
+const BlockStmt = ast_pkg.BlockStmt;
 const Expr = ast_pkg.Expr;
 const Ast = ast_pkg.Ast;
+const Arg = ast_pkg.Arg;
 
 const panic = std.debug.panic;
 
@@ -49,14 +51,20 @@ pub const Parser = struct {
         // parse fn signature
         l.expect(.id);
         const id = l.name.as_str(l.content);
-        var args: std.ArrayList([]const u8) = .empty;
+        var args: std.ArrayList(Arg) = .empty;
         l.eat(.id);
 
         l.eat(.oparen);
         while (l.token != .cparen) {
             l.expect(.id);
-            const arg = l.name.as_str(l.content);
-            l.nexti();
+            const arg_name = l.name.as_str(l.content);
+            l.eat(.id);
+
+            l.eat(.colon);
+            l.expect(.id);
+            const type_ = l.name.as_str(l.content);
+            l.eat(.id);
+            const arg: Arg = .{ .name = arg_name, .type_ = type_ };
 
             try args.append(alloc, arg);
 
@@ -74,15 +82,7 @@ pub const Parser = struct {
         // end parse fn signature
 
         // parse fn body
-        var body: std.ArrayList(Stmt) = .empty;
-        l.eat(.obrace);
-
-        while (l.token != .cbrace) {
-            const stmt = try parse_stmt(l, alloc);
-            try body.append(alloc, stmt);
-            // l.eat(.semicolon);
-        }
-        l.eat(.cbrace);
+        const body = try parse_block_stmt(l, alloc);
 
         return ProgramDecl.create_fn(id, args, body, return_type);
     }
@@ -128,42 +128,24 @@ pub const Parser = struct {
     fn parse_if_stmt(l: *Lexer, alloc: Allocator) !Stmt {
         l.eat(.if_);
         const if_eval = try parse_expr(l, alloc);
-        var if_body: std.ArrayList(Stmt) = .empty;
-        l.eat(.obrace);
-        while (l.token != .cbrace) {
-            const stmt = try parse_stmt(l, alloc);
-            try if_body.append(alloc, stmt);
-        }
-        l.eat(.cbrace);
+        const if_body = try parse_block_stmt(l, alloc);
         var elseif_evals: std.ArrayList(Expr) = .empty;
-        var elseif_thens: std.ArrayList(std.ArrayList(Stmt)) = .empty;
+        var elseif_thens: std.ArrayList(BlockStmt) = .empty;
 
         while (l.token == .elseif) {
             l.eat(.elseif);
             const eval = try parse_expr(l, alloc);
 
-            var then: std.ArrayList(Stmt) = .empty;
-            l.eat(.obrace);
-            while (l.token != .cbrace) {
-                const stmt = try parse_stmt(l, alloc);
-                try then.append(alloc, stmt);
-            }
-            l.eat(.cbrace);
+            const then = try parse_block_stmt(l, alloc);
             try elseif_evals.append(alloc, eval);
             try elseif_thens.append(alloc, then);
         }
 
-        var else_then: ?std.ArrayList(Stmt) = null;
+        var else_then: ?BlockStmt = null;
 
         if (l.token == .else_) {
             l.eat(.else_);
-            l.eat(.obrace);
-            else_then = .empty;
-            while (l.token != .cbrace) {
-                const stmt = try parse_stmt(l, alloc);
-                try else_then.?.append(alloc, stmt);
-            }
-            l.eat(.cbrace);
+            else_then = try parse_block_stmt(l, alloc);
         }
 
         return Stmt.create_if(
@@ -173,6 +155,18 @@ pub const Parser = struct {
             elseif_thens,
             else_then,
         );
+    }
+
+    fn parse_block_stmt(l: *Lexer, alloc: Allocator) !BlockStmt {
+        var block: std.ArrayList(Stmt) = .empty;
+        l.eat(.obrace);
+        while (l.token != .cbrace) {
+            const stmt = try parse_stmt(l, alloc);
+            try block.append(alloc, stmt);
+        }
+        l.eat(.cbrace);
+
+        return .{ .stmts = block };
     }
 
     fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {

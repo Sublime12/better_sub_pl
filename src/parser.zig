@@ -75,17 +75,9 @@ pub const Parser = struct {
         // end parse fn signature
 
         // parse fn body
-        var body: std.ArrayList(Stmt) = .empty;
-        l.eat(.obrace);
+        const body = try parse_block_stmt(l, alloc);
 
-        while (l.token != .cbrace) {
-            const stmt = try parse_stmt(l, alloc);
-            try body.append(alloc, stmt);
-            // l.eat(.semicolon);
-        }
-        l.eat(.cbrace);
-
-        return ProgramDecl.create_fn(id, args, .{ .stmts = body }, return_type);
+        return ProgramDecl.create_fn(id, args, body, return_type);
     }
 
     fn parse_stmt(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Stmt {
@@ -129,13 +121,7 @@ pub const Parser = struct {
     fn parse_if_stmt(l: *Lexer, alloc: Allocator) !Stmt {
         l.eat(.if_);
         const if_eval = try parse_expr(l, alloc);
-        var if_body: std.ArrayList(Stmt) = .empty;
-        l.eat(.obrace);
-        while (l.token != .cbrace) {
-            const stmt = try parse_stmt(l, alloc);
-            try if_body.append(alloc, stmt);
-        }
-        l.eat(.cbrace);
+        const if_body = try parse_block_stmt(l, alloc);
         var elseif_evals: std.ArrayList(Expr) = .empty;
         var elseif_thens: std.ArrayList(BlockStmt) = .empty;
 
@@ -143,37 +129,37 @@ pub const Parser = struct {
             l.eat(.elseif);
             const eval = try parse_expr(l, alloc);
 
-            var then: std.ArrayList(Stmt) = .empty;
-            l.eat(.obrace);
-            while (l.token != .cbrace) {
-                const stmt = try parse_stmt(l, alloc);
-                try then.append(alloc, stmt);
-            }
-            l.eat(.cbrace);
+            const then = try parse_block_stmt(l, alloc);
             try elseif_evals.append(alloc, eval);
-            try elseif_thens.append(alloc, .{ .stmts = then });
+            try elseif_thens.append(alloc, then);
         }
 
         var else_then: ?BlockStmt = null;
 
         if (l.token == .else_) {
             l.eat(.else_);
-            l.eat(.obrace);
-            else_then = .{ .stmts =  .empty };
-            while (l.token != .cbrace) {
-                const stmt = try parse_stmt(l, alloc);
-                try else_then.?.stmts.append(alloc, stmt);
-            }
-            l.eat(.cbrace);
+            else_then = try parse_block_stmt(l, alloc);
         }
 
         return Stmt.create_if(
             if_eval,
-            .{ .stmts = if_body },
+            if_body,
             elseif_evals,
             elseif_thens,
             else_then,
         );
+    }
+
+    fn parse_block_stmt(l: *Lexer, alloc: Allocator) !BlockStmt {
+        var block: std.ArrayList(Stmt) = .empty;
+        l.eat(.obrace);
+        while (l.token != .cbrace) {
+            const stmt = try parse_stmt(l, alloc);
+            try block.append(alloc, stmt);
+        }
+        l.eat(.cbrace);
+
+        return .{ .stmts = block };
     }
 
     fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {

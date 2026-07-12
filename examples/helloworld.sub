@@ -1,4 +1,4 @@
-fn main() void {
+fn main(arg1: type1, arg2: type2,) void {
   print("Helloworld", "maman", "Harold", "Reese",);
   fn_call("I like to play with people");
   var sub: i32 = "Bonjour";

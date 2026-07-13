@@ -51,7 +51,7 @@ pub const ProgramDecl = union(ProgramDeclTag) {
     }
 };
 
-const FnDecl = struct {
+pub const FnDecl = struct {
     const Self = @This();
 
     name: []const u8,

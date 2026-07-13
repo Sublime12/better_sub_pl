@@ -2,10 +2,12 @@ const std = @import("std");
 
 const lexer_pkg = @import("lexer.zig");
 const parser_pkg = @import("parser.zig");
+const sema_pkg = @import("sema.zig");
 
 const Lexer = lexer_pkg.Lexer;
 
 const parse = parser_pkg.parse;
+const sema = sema_pkg.sema;
 
 const LIMIT = 1024 * 10;
 
@@ -33,6 +35,7 @@ pub fn main(init: std.process.Init) !void {
     );
 
     const ast = try parse(&l, alloc);
+    try sema(alloc, &ast);
 
     ast.print();
 

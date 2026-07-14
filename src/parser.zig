@@ -166,7 +166,11 @@ fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         }
         const name = l.name.as_str(l.content);
         l.eat(.id);
-        return Expr.create_var(name);
+        return Expr.create_var(
+            name,
+            l.file_path,
+            l.cursor,
+        );
     } else if (l.token == .str) {
         return parse_str(l);
     }
@@ -176,7 +180,11 @@ fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
 fn parse_str(l: *Lexer) !Expr {
     const raw_str = l.name.as_str(l.content);
     l.eat(.str);
-    return Expr.create_str(raw_str);
+    return Expr.create_str(
+        raw_str,
+        l.file_path,
+        l.cursor,
+    );
 }
 
 fn parse_fn_call_expr(l: *Lexer, alloc: Allocator) !Expr {
@@ -197,5 +205,5 @@ fn parse_fn_call_expr(l: *Lexer, alloc: Allocator) !Expr {
     }
     l.eat(.cparen);
 
-    return Expr.create_fn_call(fn_name, args);
+    return Expr.create_fn_call(fn_name, args, l.file_path, l.cursor);
 }

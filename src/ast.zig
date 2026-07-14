@@ -1,5 +1,9 @@
 const std = @import("std");
 
+const lexer_pkg = @import("lexer.zig");
+
+const Cursor = lexer_pkg.Cursor;
+
 const panic = std.debug.panic;
 const assert = std.debug.assert;
 
@@ -97,7 +101,64 @@ const ExprTag = enum {
     var_,
 };
 
-pub const Expr = union(ExprTag) {
+pub const Expr = struct {
+    const Self = @This();
+
+    cursor: Cursor,
+    filepath: []const u8,
+    as: ExprAs,
+
+    pub fn create_fn_call(
+        name: []const u8,
+        args: std.ArrayList(Expr),
+        filepath: []const u8,
+        cursor: Cursor,
+    ) Expr {
+        return .{
+            .as = .{ .fn_call = .{
+                .name = name,
+                .args = args,
+            } },
+            .filepath = filepath,
+            .cursor = cursor,
+        };
+    }
+
+    pub fn create_str(
+        content: []const u8,
+        filepath: []const u8,
+        cursor: Cursor,
+    ) Expr {
+        return .{
+            .as = .{ .str = content },
+            .filepath = filepath,
+            .cursor = cursor,
+        };
+    }
+
+    pub fn create_var(
+        name: []const u8,
+        filepath: []const u8,
+        cursor: Cursor,
+    ) Expr {
+        return .{
+            .as = .{ .var_ = name },
+            .filepath = filepath,
+            .cursor = cursor,
+        };
+    }
+
+    pub fn print(self: Self) void {
+        switch (self.as) {
+            .str => |str| std.debug.print("\"{s}\"", .{str}),
+            .fn_call => |fn_call| fn_call.print(),
+            .var_ => |var_| std.debug.print("{s}", .{var_}),
+            else => panic("print unimplemented for {}", .{std.meta.activeTag(self.as)}),
+        }
+    }
+};
+
+pub const ExprAs = union(ExprTag) {
     const Self = @This();
 
     arith: ArithExpr,
@@ -105,30 +166,6 @@ pub const Expr = union(ExprTag) {
     fn_call: FnCallExpr,
     str: []const u8,
     var_: []const u8,
-
-    pub fn create_fn_call(name: []const u8, args: std.ArrayList(Expr)) Expr {
-        return .{ .fn_call = .{
-            .name = name,
-            .args = args,
-        } };
-    }
-
-    pub fn create_str(content: []const u8) Expr {
-        return .{ .str = content };
-    }
-
-    pub fn create_var(name: []const u8) Expr {
-        return .{ .var_ = name };
-    }
-
-    pub fn print(self: Self) void {
-        switch (self) {
-            .str => |str| std.debug.print("\"{s}\"", .{str}),
-            .fn_call => |fn_call| fn_call.print(),
-            .var_ => |var_| std.debug.print("{s}", .{var_}),
-            else => panic("print unimplemented for {}", .{std.meta.activeTag(self)}),
-        }
-    }
 };
 
 const ArithExpr = struct {

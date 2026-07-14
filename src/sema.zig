@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const Allocator = std.mem.Allocator;
 
@@ -16,7 +17,7 @@ pub fn sema(alloc: Allocator, ast: *const Ast) !void {
     // undeclared var
 
     for (ast.decls.items) |decl| {
-        switch(decl) {
+        switch (decl) {
             .fn_decl => |fn_decl| try sema_fn_decl(alloc, fn_decl),
         }
     }
@@ -38,7 +39,10 @@ fn sema_block(alloc: Allocator, block: BlockStmt, decl_vars: *std.ArrayList(Arg)
     for (block.stmts.items) |stmt| {
         switch (stmt) {
             .assign => |assign| {
-                const arg: Arg = .{ .name = assign.var_, .type_ = assign.type_ ,};
+                const arg: Arg = .{
+                    .name = assign.var_,
+                    .type_ = assign.type_,
+                };
                 try decl_vars.append(alloc, arg);
             },
             .no_assign => |no_assign| sema_expr(no_assign.value, decl_vars),
@@ -51,7 +55,7 @@ fn sema_block(alloc: Allocator, block: BlockStmt, decl_vars: *std.ArrayList(Arg)
 }
 
 fn sema_expr(expr: Expr, decl_vars: *std.ArrayList(Arg)) void {
-    switch(expr) {
+    switch (expr.as) {
         .fn_call => |fn_call| {
             for (fn_call.args.items) |arg| {
                 sema_expr(arg, decl_vars);
@@ -59,10 +63,25 @@ fn sema_expr(expr: Expr, decl_vars: *std.ArrayList(Arg)) void {
         },
         .var_ => |var_| {
             if (!contains(decl_vars.items, var_)) {
-                panic("use of undeclared var: {s}", .{var_});
+                if (builtin.mode == .Debug and false) {
+                    panic("{s}:{}:{} use of undeclared var: {s}", .{
+                        expr.filepath,
+                        expr.cursor.row,
+                        expr.cursor.col,
+                        var_,
+                    });
+                } else {
+                    std.debug.print("{s}:{}:{} use of undeclared var: {s}\n", .{
+                        expr.filepath,
+                        expr.cursor.row,
+                        expr.cursor.col,
+                        var_,
+                    });
+                    std.process.exit(1);
+                }
             }
         },
-        .arith, .bool_, .str => unreachable,
+        .arith, .bool_, .str => {},
     }
 }
 

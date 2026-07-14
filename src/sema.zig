@@ -1,9 +1,10 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const Allocator = std.mem.Allocator;
-
 const ast_pkg = @import("ast.zig");
+const errors_pkg = @import("errors.zig");
+
+const Allocator = std.mem.Allocator;
 
 const Ast = ast_pkg.Ast;
 const FnDecl = ast_pkg.FnDecl;
@@ -12,6 +13,7 @@ const Expr = ast_pkg.Expr;
 const BlockStmt = ast_pkg.BlockStmt;
 
 const panic = std.debug.panic;
+const print_error_line = errors_pkg.print_error_line;
 
 pub fn sema(alloc: Allocator, ast: *const Ast) !void {
     // undeclared var
@@ -63,20 +65,16 @@ fn sema_expr(expr: Expr, decl_vars: *std.ArrayList(Arg)) void {
         },
         .var_ => |var_| {
             if (!contains(decl_vars.items, var_)) {
-                if (builtin.mode == .Debug and false) {
-                    panic("{s}:{}:{} use of undeclared var: {s}", .{
-                        expr.filepath,
-                        expr.cursor.row,
-                        expr.cursor.col,
-                        var_,
-                    });
+                std.debug.print("{s}:{}:{} use of undeclared var: {s}", .{
+                    expr.file_path,
+                    expr.cursor.row,
+                    expr.cursor.col,
+                    var_,
+                });
+                print_error_line(expr.file_path, expr.file_content, expr.cursor);
+                if (builtin.mode == .Debug) {
+                    panic("", .{});
                 } else {
-                    std.debug.print("{s}:{}:{} use of undeclared var: {s}\n", .{
-                        expr.filepath,
-                        expr.cursor.row,
-                        expr.cursor.col,
-                        var_,
-                    });
                     std.process.exit(1);
                 }
             }

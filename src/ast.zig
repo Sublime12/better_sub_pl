@@ -105,46 +105,53 @@ pub const Expr = struct {
     const Self = @This();
 
     cursor: Cursor,
-    filepath: []const u8,
+    file_path: []const u8,
+    file_content: []const u8,
     as: ExprAs,
 
     pub fn create_fn_call(
         name: []const u8,
         args: std.ArrayList(Expr),
-        filepath: []const u8,
+        file_path: []const u8,
         cursor: Cursor,
+        file_content: []const u8,
     ) Expr {
         return .{
             .as = .{ .fn_call = .{
                 .name = name,
                 .args = args,
             } },
-            .filepath = filepath,
+            .file_path = file_path,
             .cursor = cursor,
+            .file_content = file_content,
         };
     }
 
     pub fn create_str(
         content: []const u8,
-        filepath: []const u8,
+        file_path: []const u8,
         cursor: Cursor,
+        file_content: []const u8,
     ) Expr {
         return .{
             .as = .{ .str = content },
-            .filepath = filepath,
+            .file_path = file_path,
             .cursor = cursor,
+            .file_content = file_content,
         };
     }
 
     pub fn create_var(
         name: []const u8,
-        filepath: []const u8,
+        file_path: []const u8,
         cursor: Cursor,
+        file_content: []const u8,
     ) Expr {
         return .{
             .as = .{ .var_ = name },
-            .filepath = filepath,
+            .file_path = file_path,
             .cursor = cursor,
+            .file_content = file_content,
         };
     }
 

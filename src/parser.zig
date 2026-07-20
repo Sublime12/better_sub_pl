@@ -174,6 +174,15 @@ fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         );
     } else if (l.token == .str) {
         return parse_str(l);
+    } else if (l.token == .int) {
+        const integer = l.integer_value.?;
+        l.eat(.int);
+        return Expr.create_int(
+            integer,
+            l.file_path,
+            l.previous_cursor,
+            l.content,
+        );
     }
     panic("parse_expr panics with {}, name: {s}", .{ l.token, l.name.as_str(l.content) });
 }

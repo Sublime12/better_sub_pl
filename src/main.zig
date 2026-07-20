@@ -49,7 +49,7 @@ pub fn main(init: std.process.Init) !void {
     ast.print(&w.writer);
 
     const text = w.toArrayList();
-    std.debug.print("printed content: \n{s}\n", .{ text.items });
+    std.debug.print("printed content: \n{s}\n", .{text.items});
 
     // while (l.next()) {
     //     std.debug.print("token: {}\n", .{l.token});

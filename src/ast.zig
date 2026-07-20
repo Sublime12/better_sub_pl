@@ -156,12 +156,29 @@ pub const Expr = struct {
         };
     }
 
+    pub fn create_int(
+        integer: i32,
+        file_path: []const u8,
+        cursor: Cursor,
+        file_content: []const u8,
+    ) Expr {
+        return .{
+            .as = .{ .arith = .{ .value = integer } },
+            .file_path = file_path,
+            .cursor = cursor,
+            .file_content = file_content,
+        };
+    }
+
     pub fn print(self: Self, w: *Writer) void {
         switch (self.as) {
             .str => |str| w.print("\"{s}\"", .{str}) catch unreachable,
             .fn_call => |fn_call| fn_call.print(w),
             .var_ => |var_| w.print("{s}", .{var_}) catch unreachable,
-            else => panic("print unimplemented for {}", .{std.meta.activeTag(self.as)}),
+            .arith => |arith| {
+                w.print("{}", .{arith.value}) catch unreachable;
+            },
+            .bool_ => panic("print unimplemented for bool", .{}),
         }
     }
 };
@@ -241,7 +258,7 @@ pub const Stmt = union(StmtTag) {
         } };
     }
 
-    pub fn print(self: Self,w: *Writer, indent: usize) void {
+    pub fn print(self: Self, w: *Writer, indent: usize) void {
         switch (self) {
             .declare_and_assign => |assign| assign.print(w, indent),
             .no_assign => |no_assign| no_assign.print(w, indent),

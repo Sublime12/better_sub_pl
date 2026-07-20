@@ -15,7 +15,13 @@ const BlockStmt = ast_pkg.BlockStmt;
 const panic = std.debug.panic;
 const print_error_line = errors_pkg.print_error_line;
 
-pub fn sema(alloc: Allocator, ast: *const Ast) !void {
+pub const SemaErr = error {
+    OutOfMemory,
+    CallUnknownFunction,
+    UndeclaredVar,
+};
+
+pub fn sema(alloc: Allocator, ast: *const Ast) SemaErr!void {
     var fn_names: std.ArrayList([]const u8) = .empty;
     defer fn_names.deinit(alloc);
     // register fn names
@@ -65,9 +71,10 @@ fn sema_block(
                 };
                 try decl_vars.append(alloc, arg);
             },
-            .no_assign => |no_assign| sema_expr(no_assign.value, decl_vars, fn_names),
+            .no_assign => |no_assign| try sema_expr(no_assign.value, decl_vars, fn_names),
+
             .if_ => |if_| {
-                sema_expr(if_.if_eval, decl_vars, fn_names);
+                try sema_expr(if_.if_eval, decl_vars, fn_names);
                 try sema_block(alloc, if_.if_body, decl_vars, fn_names);
             },
         }
@@ -78,7 +85,7 @@ fn sema_expr(
     expr: Expr,
     decl_vars: *std.ArrayList(Arg),
     funs: std.ArrayList([]const u8),
-) void {
+) SemaErr!void {
     switch (expr.as) {
         .fn_call => |fn_call| {
             if (!contains_str(funs.items, fn_call.name)) {
@@ -91,14 +98,15 @@ fn sema_expr(
                     expr.file_content,
                     expr.cursor,
                 );
-                if (builtin.mode == .Debug) {
-                    panic("", .{});
-                } else {
-                    std.process.exit(1);
-                }
+                return SemaErr.CallUnknownFunction;
+                // if (builtin.mode == .Debug) {
+                //     panic("", .{});
+                // } else {
+                //     std.process.exit(1);
+                // }
             }
             for (fn_call.args.items) |arg| {
-                sema_expr(arg, decl_vars, funs);
+                try sema_expr(arg, decl_vars, funs);
             }
         },
         .var_ => |var_| {
@@ -112,11 +120,7 @@ fn sema_expr(
                     expr.file_content,
                     expr.cursor,
                 );
-                if (builtin.mode == .Debug) {
-                    panic("", .{});
-                } else {
-                    std.process.exit(1);
-                }
+                return SemaErr.UndeclaredVar;
             }
         },
         .arith, .bool_, .str => {},

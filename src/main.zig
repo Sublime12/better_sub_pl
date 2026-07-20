@@ -5,6 +5,7 @@ const parser_pkg = @import("parser.zig");
 const sema_pkg = @import("sema.zig");
 
 const Lexer = lexer_pkg.Lexer;
+const SemaErr = sema_pkg.SemaErr;
 
 const parse = parser_pkg.parse;
 const sema = sema_pkg.sema;
@@ -35,7 +36,14 @@ pub fn main(init: std.process.Init) !void {
     );
 
     const ast = try parse(&l, alloc);
-    try sema(alloc, &ast);
+    sema(alloc, &ast) catch |err| {
+        switch (err) {
+            SemaErr.UndeclaredVar => std.debug.print("Call to undeclared var", .{}),
+            SemaErr.CallUnknownFunction => std.debug.print("unknowns function", .{}),
+            SemaErr.OutOfMemory => return SemaErr.OutOfMemory, 
+        }
+        return;
+    };
 
     ast.print();
 

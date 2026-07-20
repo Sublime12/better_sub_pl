@@ -7,7 +7,13 @@ const Cursor = lexer_pkg.Cursor;
 
 const panic = std.debug.panic;
 
-pub fn print_error_line(file_path: []const u8, content: []const u8, cursor: Cursor) void {
+pub fn print_error_line(
+    comptime fmt: []const u8,
+    args: anytype,
+    file_path: []const u8,
+    content: []const u8,
+    cursor: Cursor,
+) void {
     var begin: usize = cursor.pos;
     var end: usize = cursor.pos;
 
@@ -29,14 +35,16 @@ pub fn print_error_line(file_path: []const u8, content: []const u8, cursor: Curs
     const RED_TAG = "\x1b[31m";
     const END_TAG = "\x1b[0m";
     std.debug.print(
-        "\n" ++ GREEN_TAG ++ "{s}:{}:{}" ++ END_TAG ++ " use of undeclared variable in line\n{s}\n",
+        "\n" ++ GREEN_TAG ++ "{s}:{}:{}" ++ END_TAG ++ " ",
         .{
             file_path,
             cursor.row + 1,
             cursor.col,
-            content_error,
         },
     );
+
+    std.debug.print(fmt ++ "\n", args);
+    std.debug.print("{s}\n", .{ content_error});
 
     for (0..cursor.col - 1) |_| {
         std.debug.print(" ", .{});

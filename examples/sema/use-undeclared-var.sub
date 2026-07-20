@@ -7,3 +7,7 @@ fn main() void {
     }
     printf(a);
 }
+
+fn printf() void {
+
+}

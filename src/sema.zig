@@ -64,15 +64,15 @@ fn sema_block(
     defer decl_vars.items.len = length;
     for (block.stmts.items) |stmt| {
         switch (stmt) {
-            .assign => |assign| {
+            .declare_and_assign => |assign| {
                 const arg: Arg = .{
                     .name = assign.var_,
                     .type_ = assign.type_,
                 };
                 try decl_vars.append(alloc, arg);
             },
+            .assign => unreachable,
             .no_assign => |no_assign| try sema_expr(no_assign.value, decl_vars, fn_names),
-
             .if_ => |if_| {
                 try sema_expr(if_.if_eval, decl_vars, fn_names);
                 try sema_block(alloc, if_.if_body, decl_vars, fn_names);

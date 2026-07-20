@@ -106,7 +106,7 @@ fn parse_var_decl_stmt(l: *Lexer, alloc: Allocator) !Stmt {
     l.eat(.id);
     l.eat(.assign);
     const expr = try parse_expr(l, alloc);
-    return .{ .assign = .{
+    return .{ .declare_and_assign = .{
         .var_ = name,
         .type_ = type_,
         .value = expr,

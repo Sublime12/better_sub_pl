@@ -3,6 +3,7 @@ const std = @import("std");
 const lexer_pkg = @import("lexer.zig");
 
 const Cursor = lexer_pkg.Cursor;
+const Writer = std.Io.Writer;
 
 const panic = std.debug.panic;
 const assert = std.debug.assert;
@@ -16,10 +17,10 @@ pub const Ast = struct {
         return .{ .decls = decls };
     }
 
-    pub fn print(ast: Ast) void {
+    pub fn print(ast: Ast, w: *Writer) void {
         for (ast.decls.items) |decl| {
-            decl.print(0);
-            std.debug.print("\n\n", .{});
+            decl.print(w, 0);
+            w.print("\n\n", .{}) catch unreachable;
         }
     }
 };
@@ -48,9 +49,9 @@ pub const ProgramDecl = union(ProgramDeclTag) {
         } };
     }
 
-    pub fn print(self: Self, nindent: usize) void {
+    pub fn print(self: Self, w: *Writer, nindent: usize) void {
         switch (self) {
-            .fn_decl => |fn_decl| fn_decl.print(nindent),
+            .fn_decl => |fn_decl| fn_decl.print(w, nindent),
         }
     }
 };
@@ -63,22 +64,22 @@ pub const FnDecl = struct {
     body: BlockStmt,
     return_type: []const u8,
 
-    pub fn print(self: Self, indent: usize) void {
-        print_nindent(indent);
-        std.debug.print("fn {s}(", .{self.name});
+    pub fn print(self: Self, w: *Writer, indent: usize) void {
+        print_nindent(w, indent);
+        w.print("fn {s}(", .{self.name}) catch unreachable;
         for (self.args.items, 0..) |arg, i| {
-            std.debug.print("{s}: {s}", .{ arg.name, arg.type_ });
-            if (i < self.args.items.len - 1) std.debug.print(", ", .{});
+            w.print("{s}: {s}", .{ arg.name, arg.type_ }) catch unreachable;
+            if (i < self.args.items.len - 1) w.print(", ", .{}) catch unreachable;
         }
 
-        std.debug.print(") {s} {{\n", .{self.return_type});
+        w.print(") {s} {{\n", .{self.return_type}) catch unreachable;
 
         for (self.body.stmts.items) |stmt| {
-            stmt.print(indent + 1);
+            stmt.print(w, indent + 1);
         }
 
-        print_nindent(indent);
-        std.debug.print("}}", .{});
+        print_nindent(w, indent);
+        w.print("}}", .{}) catch unreachable;
     }
 };
 
@@ -155,11 +156,11 @@ pub const Expr = struct {
         };
     }
 
-    pub fn print(self: Self) void {
+    pub fn print(self: Self, w: *Writer) void {
         switch (self.as) {
-            .str => |str| std.debug.print("\"{s}\"", .{str}),
-            .fn_call => |fn_call| fn_call.print(),
-            .var_ => |var_| std.debug.print("{s}", .{var_}),
+            .str => |str| w.print("\"{s}\"", .{str}) catch unreachable,
+            .fn_call => |fn_call| fn_call.print(w),
+            .var_ => |var_| w.print("{s}", .{var_}) catch unreachable,
             else => panic("print unimplemented for {}", .{std.meta.activeTag(self.as)}),
         }
     }
@@ -189,19 +190,20 @@ const FnCallExpr = struct {
     name: []const u8,
     args: std.ArrayList(Expr),
 
-    pub fn print(self: Self) void {
-        std.debug.print("{s}(", .{self.name});
+    pub fn print(self: Self, w: *Writer) void {
+        w.print("{s}(", .{self.name}) catch unreachable;
         for (self.args.items, 0..) |arg, i| {
-            arg.print();
+            arg.print(w);
             if (i < self.args.items.len - 1) {
-                std.debug.print(", ", .{});
+                w.print(", ", .{}) catch unreachable;
             }
         }
-        std.debug.print(")", .{});
+        w.print(")", .{}) catch unreachable;
     }
 };
 
 const StmtTag = enum {
+    declare_and_assign,
     assign,
     no_assign,
     if_,
@@ -211,12 +213,13 @@ const StmtTag = enum {
 pub const Stmt = union(StmtTag) {
     const Self = @This();
 
+    declare_and_assign: DeclareAndAssignStmt,
     assign: AssignStmt,
     no_assign: NoAssignStmt,
     if_: IfStmt,
 
     pub fn create_assign(var_: ?[]const u8, value: Expr) Stmt {
-        return .{ .assign = .{
+        return .{ .declare_and_assign = .{
             .var_ = var_,
             .value = value,
         } };
@@ -238,28 +241,34 @@ pub const Stmt = union(StmtTag) {
         } };
     }
 
-    pub fn print(self: Self, indent: usize) void {
+    pub fn print(self: Self,w: *Writer, indent: usize) void {
         switch (self) {
-            .assign => |assign| assign.print(indent),
-            .no_assign => |no_assign| no_assign.print(indent),
-            .if_ => |if_| if_.print(indent),
+            .declare_and_assign => |assign| assign.print(w, indent),
+            .no_assign => |no_assign| no_assign.print(w, indent),
+            .assign => unreachable,
+            .if_ => |if_| if_.print(w, indent),
         }
-        std.debug.print("\n", .{});
+        w.print("\n", .{}) catch unreachable;
     }
 };
 
 const AssignStmt = struct {
+    var_: []const u8,
+    value: Expr,
+};
+
+const DeclareAndAssignStmt = struct {
     const Self = @This();
 
     var_: []const u8,
     type_: []const u8,
     value: Expr,
 
-    pub fn print(self: Self, indent: usize) void {
-        print_nindent(indent);
-        std.debug.print("var {s}: {s} = ", .{ self.var_, self.type_ });
-        self.value.print();
-        std.debug.print(";", .{});
+    pub fn print(self: Self, w: *Writer, indent: usize) void {
+        print_nindent(w, indent);
+        w.print("var {s}: {s} = ", .{ self.var_, self.type_ }) catch unreachable;
+        self.value.print(w);
+        w.print(";", .{}) catch unreachable;
     }
 };
 
@@ -267,10 +276,10 @@ const NoAssignStmt = struct {
     const Self = @This();
     value: Expr,
 
-    pub fn print(self: Self, indent: usize) void {
-        print_nindent(indent);
-        self.value.print();
-        std.debug.print(";", .{});
+    pub fn print(self: Self, w: *Writer, indent: usize) void {
+        print_nindent(w, indent);
+        self.value.print(w);
+        w.print(";", .{}) catch unreachable;
     }
 };
 
@@ -285,48 +294,48 @@ const IfStmt = struct {
 
     else_then: ?BlockStmt,
 
-    pub fn print(self: Self, indent: usize) void {
-        print_nindent(indent);
-        std.debug.print("if ", .{});
-        self.if_eval.print();
-        std.debug.print(" {{\n", .{});
+    pub fn print(self: Self, w: *Writer, indent: usize) void {
+        print_nindent(w, indent);
+        w.print("if ", .{}) catch unreachable;
+        self.if_eval.print(w);
+        w.print(" {{\n", .{}) catch unreachable;
         for (self.if_body.stmts.items) |stmt| {
-            stmt.print(indent + 1);
+            stmt.print(w, indent + 1);
         }
-        print_nindent(indent);
-        std.debug.print("}}", .{});
+        print_nindent(w, indent);
+        w.print("}}", .{}) catch unreachable;
 
         assert(self.elseif_evals.items.len == self.elseif_thens.items.len);
         for (0..self.elseif_evals.items.len) |i| {
             const eval = self.elseif_evals.items[i];
             const then = self.elseif_thens.items[i];
 
-            std.debug.print(" elseif ", .{});
-            eval.print();
-            std.debug.print(" {{\n", .{});
+            w.print(" elseif ", .{}) catch unreachable;
+            eval.print(w);
+            w.print(" {{\n", .{}) catch unreachable;
 
             for (then.stmts.items) |then_stmt| {
-                then_stmt.print(indent + 1);
+                then_stmt.print(w, indent + 1);
             }
-            print_nindent(indent);
-            std.debug.print("}}", .{});
+            print_nindent(w, indent);
+            w.print("}}", .{}) catch unreachable;
         }
 
         if (self.else_then != null) {
             const else_then = self.else_then.?;
 
-            std.debug.print(" else {{\n", .{});
+            w.print(" else {{\n", .{}) catch unreachable;
             for (else_then.stmts.items) |then_stmt| {
-                then_stmt.print(indent + 1);
+                then_stmt.print(w, indent + 1);
             }
-            print_nindent(indent);
-            std.debug.print("}}", .{});
+            print_nindent(w, indent);
+            w.print("}}", .{}) catch unreachable;
         }
     }
 };
 
-fn print_nindent(n: usize) void {
+fn print_nindent(w: *Writer, n: usize) void {
     for (0..n) |_| {
-        std.debug.print("    ", .{});
+        w.print("    ", .{}) catch unreachable;
     }
 }

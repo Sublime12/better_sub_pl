@@ -45,7 +45,11 @@ pub fn main(init: std.process.Init) !void {
         return;
     };
 
-    ast.print();
+    var w: std.Io.Writer.Allocating = .init(alloc);
+    ast.print(&w.writer);
+
+    const text = w.toArrayList();
+    std.debug.print("printed content: \n{s}\n", .{ text.items });
 
     // while (l.next()) {
     //     std.debug.print("token: {}\n", .{l.token});

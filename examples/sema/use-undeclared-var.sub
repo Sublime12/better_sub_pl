@@ -1,0 +1,13 @@
+fn main() void {
+    var b: i32 = "bonjour";
+    if b {
+        var a: i32 = "in if";
+        printf(b);
+        printf(a);
+    }
+    printf(a);
+}
+
+fn printf() void {
+
+}

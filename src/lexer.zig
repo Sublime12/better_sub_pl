@@ -69,7 +69,7 @@ pub const Lexer = struct {
         l.nexti();
     }
 
-    fn current_line(l: *Lexer) []const u8 {
+    pub fn current_line(l: *Lexer) []const u8 {
         var begin: usize = l.cursor.pos;
         var end: usize = l.cursor.pos;
 
@@ -85,14 +85,17 @@ pub const Lexer = struct {
         const END_TAG = "\x1b[0m";
         if (l.token != expected) {
             const panic_line = l.current_line();
-            std.debug.print("\n" ++ GREEN_TAG ++ "{s}:{}:{}" ++ END_TAG ++ " expected this `{s}`, found: `{s}` in line\n{s}\n", .{
-                l.file_path,
-                l.cursor.row + 1,
-                l.cursor.col,
-                expected.get_str(),
-                l.name.as_str(l.content),
-                panic_line,
-            });
+            std.debug.print(
+                "\n" ++ GREEN_TAG ++ "{s}:{}:{}" ++ END_TAG ++ " expected this `{s}`, found: `{s}` in line\n{s}\n",
+                .{
+                    l.file_path,
+                    l.cursor.row + 1,
+                    l.cursor.col,
+                    expected.get_str(),
+                    l.name.as_str(l.content),
+                    panic_line,
+                },
+            );
 
             for (0..l.cursor.col - 1) |_| {
                 std.debug.print(" ", .{});

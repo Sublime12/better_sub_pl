@@ -29,7 +29,6 @@ pub fn print_error_line(
     while (end < content.len and content[end] != '\n') end += 1;
 
     const content_error = content[begin..end];
-    // std.debug.print("{s}\n", .{content_error});
 
     const GREEN_TAG = "\x1b[32m";
     const RED_TAG = "\x1b[31m";

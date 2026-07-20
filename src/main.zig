@@ -40,7 +40,7 @@ pub fn main(init: std.process.Init) !void {
         switch (err) {
             SemaErr.UndeclaredVar => std.debug.print("Call to undeclared var", .{}),
             SemaErr.CallUnknownFunction => std.debug.print("unknowns function", .{}),
-            SemaErr.OutOfMemory => return SemaErr.OutOfMemory, 
+            SemaErr.OutOfMemory => return SemaErr.OutOfMemory,
         }
         return;
     };

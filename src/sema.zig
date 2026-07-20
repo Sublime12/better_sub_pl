@@ -15,7 +15,7 @@ const BlockStmt = ast_pkg.BlockStmt;
 const panic = std.debug.panic;
 const print_error_line = errors_pkg.print_error_line;
 
-pub const SemaErr = error {
+pub const SemaErr = error{
     OutOfMemory,
     CallUnknownFunction,
     UndeclaredVar,
@@ -99,11 +99,6 @@ fn sema_expr(
                     expr.cursor,
                 );
                 return SemaErr.CallUnknownFunction;
-                // if (builtin.mode == .Debug) {
-                //     panic("", .{});
-                // } else {
-                //     std.process.exit(1);
-                // }
             }
             for (fn_call.args.items) |arg| {
                 try sema_expr(arg, decl_vars, funs);

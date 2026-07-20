@@ -44,7 +44,7 @@ pub fn print_error_line(
     );
 
     std.debug.print(fmt ++ "\n", args);
-    std.debug.print("{s}\n", .{ content_error});
+    std.debug.print("{s}\n", .{content_error});
 
     for (0..cursor.col - 1) |_| {
         std.debug.print(" ", .{});

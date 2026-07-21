@@ -235,10 +235,28 @@ pub const Stmt = union(StmtTag) {
     no_assign: NoAssignStmt,
     if_: IfStmt,
 
-    pub fn create_assign(var_: ?[]const u8, value: Expr) Stmt {
+    pub fn create_declare_and_assign(
+        var_: []const u8,
+        type_: []const u8,
+        value: Expr,
+    ) Stmt {
         return .{ .declare_and_assign = .{
             .var_ = var_,
+            .type_ = type_,
             .value = value,
+        } };
+    }
+
+    pub fn create_assign(lvalue: Expr, rvalue: Expr) Stmt {
+        return .{ .assign = .{
+            .lvalue = lvalue,
+            .rvalue = rvalue,
+        } };
+    }
+
+    pub fn create_no_assign(rvalue: Expr) Stmt {
+        return .{ .no_assign = .{
+            .rvalue = rvalue,
         } };
     }
 
@@ -270,8 +288,8 @@ pub const Stmt = union(StmtTag) {
 };
 
 const AssignStmt = struct {
-    var_: []const u8,
-    value: Expr,
+    lvalue: Expr,
+    rvalue: Expr,
 };
 
 const DeclareAndAssignStmt = struct {
@@ -291,11 +309,11 @@ const DeclareAndAssignStmt = struct {
 
 const NoAssignStmt = struct {
     const Self = @This();
-    value: Expr,
+    rvalue: Expr,
 
     pub fn print(self: Self, w: *Writer, indent: usize) void {
         print_nindent(w, indent);
-        self.value.print(w);
+        self.rvalue.print(w);
         w.print(";", .{}) catch unreachable;
     }
 };

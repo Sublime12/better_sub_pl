@@ -72,7 +72,7 @@ fn sema_block(
                 try decl_vars.append(alloc, arg);
             },
             .assign => unreachable,
-            .no_assign => |no_assign| try sema_expr(no_assign.value, decl_vars, fn_names),
+            .no_assign => |no_assign| try sema_expr(no_assign.rvalue, decl_vars, fn_names),
             .if_ => |if_| {
                 try sema_expr(if_.if_eval, decl_vars, fn_names);
                 try sema_block(alloc, if_.if_body, decl_vars, fn_names);

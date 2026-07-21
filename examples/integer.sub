@@ -1,3 +1,4 @@
 fn main(arg1: type1, arg2: type2,) void {
   var sub: i32 = 15;
+  sub = 17;
 }

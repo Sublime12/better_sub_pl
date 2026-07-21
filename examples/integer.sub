@@ -2,3 +2,9 @@ fn main(arg1: type1, arg2: type2,) void {
   var sub: i32 = 15;
   sub = 17;
 }
+# push rbp
+# mov rsp, rbp
+# sub 4, rsp
+# mov word ptr 15, [rbp - 4]
+# mov word ptr 17, [rbp - 4]
+# syscall exit because main

@@ -66,9 +66,11 @@ pub fn main(init: std.process.Init) !void {
     var assembly: std.Io.Writer.Allocating = .init(alloc);
 
     if (options.gen) {
-        gen(&assembly.writer, ast);
-        std.debug.print("generated program: {s}\n", .{assembly.toArrayList().items});
+        try gen(alloc, &assembly.writer, ast);
+        std.debug.print("generated program: \n==========\n{s}\n", .{assembly.toArrayList().items});
     }
+
+    // const output_path = "output.s";
 
     var w: std.Io.Writer.Allocating = .init(alloc);
     ast.print(&w.writer);
@@ -94,6 +96,11 @@ fn parse_args(args: []const []const u8, options: *Options) void {
             has_file_path = true;
             options.file_path = arg;
         }
+    }
+
+    if (!has_file_path) {
+        std.debug.print("filepath not provided\n", .{});
+        std.process.exit(1);
     }
 }
 

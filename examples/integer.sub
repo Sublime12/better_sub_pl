@@ -1,6 +1,8 @@
-fn main(arg1: type1, arg2: type2,) void {
+fn _start() void {
   var sub: i32 = 15;
-  sub = 17;
+  var b: i32 = 84;
+  var c: i32 = 12;
+  # sub = 17;
 }
 # push rbp
 # mov rsp, rbp

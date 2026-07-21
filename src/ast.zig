@@ -280,7 +280,7 @@ pub const Stmt = union(StmtTag) {
         switch (self) {
             .declare_and_assign => |assign| assign.print(w, indent),
             .no_assign => |no_assign| no_assign.print(w, indent),
-            .assign => unreachable,
+            .assign => |assign| assign.print(w, indent),
             .if_ => |if_| if_.print(w, indent),
         }
         w.print("\n", .{}) catch unreachable;
@@ -288,8 +288,18 @@ pub const Stmt = union(StmtTag) {
 };
 
 const AssignStmt = struct {
+    const Self = @This();
+
     lvalue: Expr,
     rvalue: Expr,
+
+    pub fn print(self: Self, w: *Writer, indent: usize) void {
+        print_nindent(w, indent);
+        self.lvalue.print(w);
+        w.print(" = ", .{}) catch unreachable;
+        self.rvalue.print(w);
+        w.print(";", .{}) catch unreachable;
+    }
 };
 
 const DeclareAndAssignStmt = struct {

@@ -62,16 +62,13 @@ pub fn main(init: std.process.Init) !void {
 
     const text = w.toArrayList();
     std.debug.print("printed content: \n{s}\n", .{text.items});
-
-    // while (l.next()) {
-    //     std.debug.print("token: {}\n", .{l.token});
-    // }
 }
 
 fn parse_args(args: []const []const u8, options: *Options) void {
     var has_file_path = false;
     for (args, 0..) |arg, i| {
         if (i == 0) continue;
+
         if (std.mem.eql(u8, arg, "--sema")) {
             options.sema = true;
         } else if (std.mem.startsWith(u8, arg, "--")) {

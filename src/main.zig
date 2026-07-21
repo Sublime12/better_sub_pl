@@ -72,8 +72,8 @@ fn parse_args(args: []const []const u8, options: *Options) void {
     var has_file_path = false;
     for (args, 0..) |arg, i| {
         if (i == 0) continue;
-        if (std.mem.eql(u8, arg, "--sema")) { 
-            options.sema = true; 
+        if (std.mem.eql(u8, arg, "--sema")) {
+            options.sema = true;
         } else if (std.mem.startsWith(u8, arg, "--")) {
             std.debug.print("unknowns arg: {s}\n", .{arg});
             std.process.exit(1);

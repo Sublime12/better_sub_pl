@@ -3,12 +3,14 @@ const std = @import("std");
 const lexer_pkg = @import("lexer.zig");
 const parser_pkg = @import("parser.zig");
 const sema_pkg = @import("sema.zig");
+const codegen_pkg = @import("codegen.zig");
 
 const Lexer = lexer_pkg.Lexer;
 const SemaErr = sema_pkg.SemaErr;
 
 const parse = parser_pkg.parse;
 const sema = sema_pkg.sema;
+const gen = codegen_pkg.gen;
 
 const LIMIT = 1024 * 10;
 
@@ -16,6 +18,7 @@ const assert = std.debug.assert;
 
 const Options = struct {
     sema: bool,
+    gen: bool,
     file_path: ?[]const u8,
 };
 
@@ -26,9 +29,12 @@ pub fn main(init: std.process.Init) !void {
     const io = init.io;
 
     const current_dir = std.Io.Dir.cwd();
-    // const file_path = args[1];
 
-    var options: Options = .{ .sema = false, .file_path = null };
+    var options: Options = .{
+        .sema = false,
+        .gen = false,
+        .file_path = null,
+    };
     parse_args(args, &options);
     const file_path = options.file_path.?;
 
@@ -57,11 +63,15 @@ pub fn main(init: std.process.Init) !void {
         };
     }
 
+    var assembly: std.Io.Writer.Allocating = .init(alloc);
+
+    if (options.gen) {
+        gen(&assembly.writer, ast);
+        std.debug.print("generated program: {s}\n", .{assembly.toArrayList().items});
+    }
+
     var w: std.Io.Writer.Allocating = .init(alloc);
     ast.print(&w.writer);
-
-    const text = w.toArrayList();
-    std.debug.print("printed content: \n{s}\n", .{text.items});
 }
 
 fn parse_args(args: []const []const u8, options: *Options) void {
@@ -71,6 +81,8 @@ fn parse_args(args: []const []const u8, options: *Options) void {
 
         if (std.mem.eql(u8, arg, "--sema")) {
             options.sema = true;
+        } else if (std.mem.eql(u8, arg, "--gen")) {
+            options.gen = true;
         } else if (std.mem.startsWith(u8, arg, "--")) {
             std.debug.print("unknowns arg: {s}\n", .{arg});
             std.process.exit(1);

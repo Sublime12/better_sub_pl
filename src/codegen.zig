@@ -18,6 +18,11 @@ pub fn gen(alloc: Allocator, w: *Writer, ast: Ast) !void {
         \\.global _start
         \\
         \\.text
+        \\_start:
+        \\  call main
+        \\  mov eax, 60
+        \\  xor edi, edi
+        \\  syscall
         \\
     ,
         .{},
@@ -83,6 +88,14 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl) !void {
             else => {},
         }
     }
+
+    const teardown =
+        \\  mov rsp, rbp
+        \\  pop rbp
+        \\  ret
+        \\
+    ;
+    print(w, "{s}", .{teardown});
 }
 
 fn get_var(vars: []const Var, needle: []const u8) ?Var {

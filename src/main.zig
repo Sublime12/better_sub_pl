@@ -67,10 +67,32 @@ pub fn main(init: std.process.Init) !void {
 
     if (options.gen) {
         try gen(alloc, &assembly.writer, ast);
-        std.debug.print("generated program: \n==========\n{s}\n", .{assembly.toArrayList().items});
-    }
 
-    // const output_path = "output.s";
+        const program_text = assembly.toArrayList().items;
+        std.debug.print("generated program: \n==========\n{s}\n", .{program_text});
+        const BUILD_DIR = "build";
+        const output_path = BUILD_DIR ++ "/output.s";
+        current_dir.createDir(io, BUILD_DIR, .default_dir) catch |err| switch (err) {
+            error.PathAlreadyExists => {},
+            else => return err,
+        };
+        try current_dir.writeFile(io, .{
+            .data = program_text,
+            .sub_path = output_path,
+            .flags = .{ .truncate = true },
+        });
+
+        var as_child = try std.process.spawn(
+            io,
+            .{ .argv = &.{ "as", output_path, "-o", BUILD_DIR ++ "/output.o" } },
+        );
+        _ = try as_child.wait(io);
+        var ld_child = try std.process.spawn(
+            io,
+            .{ .argv = &.{ "ld", BUILD_DIR ++ "/output.o", "-o", BUILD_DIR ++ "/output" } },
+        );
+        _ = try ld_child.wait(io);
+    }
 
     var w: std.Io.Writer.Allocating = .init(alloc);
     ast.print(&w.writer);

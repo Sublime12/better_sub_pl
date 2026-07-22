@@ -5,4 +5,3 @@ pub const Type = struct {
     size: usize,
     childrens: std.ArrayList(Type),
 };
-

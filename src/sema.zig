@@ -2,6 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const ast_pkg = @import("ast.zig");
+const types_pkg = @import("type.zig");
 const errors_pkg = @import("errors.zig");
 
 const Allocator = std.mem.Allocator;
@@ -11,6 +12,7 @@ const FnDecl = ast_pkg.FnDecl;
 const Arg = ast_pkg.Arg;
 const Expr = ast_pkg.Expr;
 const BlockStmt = ast_pkg.BlockStmt;
+const Type = types_pkg.Type;
 
 const panic = std.debug.panic;
 const print_error_line = errors_pkg.print_error_line;
@@ -21,7 +23,9 @@ pub const SemaErr = error{
     UndeclaredVar,
 };
 
-pub fn sema(alloc: Allocator, ast: *const Ast) SemaErr!void {
+pub fn sema(alloc: Allocator, ast: *const Ast, types: *std.ArrayList(Type)) SemaErr!void {
+    try register_common_types(alloc, types);
+
     var fn_names: std.ArrayList([]const u8) = .empty;
     defer fn_names.deinit(alloc);
     // register fn names
@@ -120,6 +124,15 @@ fn sema_expr(
         },
         .arith, .bool_, .str => {},
     }
+}
+
+fn register_common_types(alloc: Allocator, types: *std.ArrayList(Type)) !void {
+    const i32_t: Type = .{
+        .name = "i32",
+        .size = 4,
+        .childrens = .empty,
+    };
+    try types.append(alloc, i32_t);
 }
 
 fn contains_str(args: [][]const u8, needle: []const u8) bool {

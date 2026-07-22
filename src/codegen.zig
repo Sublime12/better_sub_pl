@@ -1,9 +1,11 @@
 const std = @import("std");
 
 const ast_pkg = @import("ast.zig");
+const types_pkg = @import("type.zig");
 
 const Writer = std.Io.Writer;
 const Allocator = std.mem.Allocator;
+const Type = types_pkg.Type;
 
 const Ast = ast_pkg.Ast;
 const FnDecl = ast_pkg.FnDecl;
@@ -11,7 +13,7 @@ const FnDecl = ast_pkg.FnDecl;
 const assert = std.debug.assert;
 const panic = std.debug.panic;
 
-pub fn gen(alloc: Allocator, w: *Writer, ast: Ast) !void {
+pub fn gen(alloc: Allocator, w: *Writer, ast: Ast, types: std.ArrayList(Type)) !void {
     print(
         w,
         \\.intel_syntax noprefix
@@ -30,7 +32,7 @@ pub fn gen(alloc: Allocator, w: *Writer, ast: Ast) !void {
 
     for (ast.decls.items) |decl| {
         switch (decl) {
-            .fn_decl => |fn_decl| try gen_fn(alloc, w, fn_decl),
+            .fn_decl => |fn_decl| try gen_fn(alloc, w, fn_decl, types),
         }
     }
 }
@@ -44,7 +46,7 @@ const Var = struct {
     }
 };
 
-fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl) !void {
+fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Type)) !void {
     print(w, "{s}:\n", .{fn_decl.name});
 
     const prelude =
@@ -62,8 +64,12 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl) !void {
     for (fn_decl.body.stmts.items) |stmt| {
         switch (stmt) {
             .declare_and_assign => |var_decl| {
-                assert(std.mem.eql(u8, var_decl.type_, "i32"));
-                current_offset += 4;
+                // assert(std.mem.eql(u8, var_decl.type_, "i32"));
+                const type_ = get_type(types.items, var_decl.type_);
+                if (type_ == null) {
+                    std.debug.panic("type {s} not found", .{var_decl.type_});
+                }
+                current_offset += type_.?.size;
                 const var_ = Var.create(var_decl.var_, current_offset);
                 try vars.append(alloc, var_);
             },
@@ -96,6 +102,17 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl) !void {
         \\
     ;
     print(w, "{s}", .{teardown});
+}
+
+fn get_type(types: []const Type, needle: []const u8) ?Type {
+    if (types.len == 0) return null;
+    var i: usize = types.len - 1;
+    while (i >= 0) {
+        const cur = types[i];
+        if (std.mem.eql(u8, cur.name, needle)) return cur;
+        i -= 1;
+    }
+    return null;
 }
 
 fn get_var(vars: []const Var, needle: []const u8) ?Var {

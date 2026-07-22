@@ -4,8 +4,10 @@ const lexer_pkg = @import("lexer.zig");
 const parser_pkg = @import("parser.zig");
 const sema_pkg = @import("sema.zig");
 const codegen_pkg = @import("codegen.zig");
+const types_pkg = @import("type.zig");
 
 const Lexer = lexer_pkg.Lexer;
+const Type = types_pkg.Type;
 const SemaErr = sema_pkg.SemaErr;
 
 const parse = parser_pkg.parse;
@@ -52,8 +54,10 @@ pub fn main(init: std.process.Init) !void {
 
     const ast = try parse(&l, alloc);
 
+    var types: std.ArrayList(Type) = .empty;
+
     if (options.sema) {
-        sema(alloc, &ast) catch |err| {
+        sema(alloc, &ast, &types) catch |err| {
             switch (err) {
                 SemaErr.UndeclaredVar => std.debug.print("Call to undeclared var", .{}),
                 SemaErr.CallUnknownFunction => std.debug.print("unknowns function", .{}),
@@ -66,7 +70,7 @@ pub fn main(init: std.process.Init) !void {
     var assembly: std.Io.Writer.Allocating = .init(alloc);
 
     if (options.gen) {
-        try gen(alloc, &assembly.writer, ast);
+        try gen(alloc, &assembly.writer, ast, types);
 
         const program_text = assembly.toArrayList().items;
         std.debug.print("generated program: \n==========\n{s}\n", .{program_text});
@@ -107,6 +111,8 @@ fn parse_args(args: []const []const u8, options: *Options) void {
             options.sema = true;
         } else if (std.mem.eql(u8, arg, "--gen")) {
             options.gen = true;
+            // if --gen provided, do also the sema
+            options.sema = true;
         } else if (std.mem.startsWith(u8, arg, "--")) {
             std.debug.print("unknowns arg: {s}\n", .{arg});
             std.process.exit(1);

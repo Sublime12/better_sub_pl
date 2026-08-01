@@ -1,7 +1,7 @@
 fn main() void {
   var sub: i32 = 15;
   var b: i32 = 84;
-  var c: i32 = 12;
+  var c: u8 = 6000;
   # var d: i32 = 12;
   # sub = 17;
 }

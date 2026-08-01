@@ -132,7 +132,14 @@ fn register_common_types(alloc: Allocator, types: *std.ArrayList(Type)) !void {
         .size = 4,
         .childrens = .empty,
     };
+    const u8_t: Type = .{
+        .name = "u8",
+        .size = 1,
+        .childrens = .empty,
+    };
+    
     try types.append(alloc, i32_t);
+    try types.append(alloc, u8_t);
 }
 
 fn contains_str(args: [][]const u8, needle: []const u8) bool {

@@ -85,8 +85,10 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Ty
             .declare_and_assign => |decl_assign| {
                 assert(std.meta.activeTag(decl_assign.value.as) == .arith);
                 const var_ = get_var(vars.items, decl_assign.var_);
+                const type_ = get_type(types.items, decl_assign.type_);
                 assert(var_ != null);
-                print(w, "  mov dword ptr [rbp - {}], {}\n", .{
+                print(w, "  mov {s} ptr [rbp - {}], {}\n", .{
+                    size_mov(type_.?.size),
                     var_.?.offset,
                     decl_assign.value.as.arith.value,
                 });
@@ -102,6 +104,14 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Ty
         \\
     ;
     print(w, "{s}", .{teardown});
+}
+
+fn size_mov(size: usize) []const u8 {
+    return switch(size) {
+        1 => "byte",
+        4 => "dword",
+        else => panic("mov prefix not defined for {}",.{size}),
+    };
 }
 
 fn get_type(types: []const Type, needle: []const u8) ?Type {

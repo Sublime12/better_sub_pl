@@ -24,30 +24,42 @@ pub const SemaErr = error{
     UndeclaredVar,
 };
 
+pub const SemaResult = struct {
+    types: std.ArrayList(Type),
+    fn_names: std.ArrayList(FnInfoDecl),
+
+    pub fn init() SemaResult {
+        return .{ .types = .empty, .fn_names = .empty, }; 
+    }
+};
+
 pub fn sema(
     alloc: Allocator,
     ast: *const Ast,
-    types: *std.ArrayList(Type),
-    fn_names: *std.ArrayList(FnInfoDecl),
-) SemaErr!void {
-    try register_common_types(alloc, types);
+    // types: *std.ArrayList(Type),
+    // fn_names: *std.ArrayList(FnInfoDecl),
+) SemaErr!SemaResult {
+    var result = SemaResult.init();
+
+    try register_common_types(alloc, &result.types);
 
     // var fn_names: std.ArrayList([]const u8) = .empty;
-    defer fn_names.deinit(alloc);
+    defer result.fn_names.deinit(alloc);
     // register fn signatures
     for (ast.decls.items) |decl| {
         switch (decl) {
             .fn_decl => |fn_decl| {
-                try fn_names.append(alloc, fn_decl.fn_sign);
+                try result.fn_names.append(alloc, fn_decl.fn_sign);
             },
         }
     }
 
     for (ast.decls.items) |decl| {
         switch (decl) {
-            .fn_decl => |fn_decl| try sema_fn_decl(alloc, fn_decl, fn_names),
+            .fn_decl => |fn_decl| try sema_fn_decl(alloc, fn_decl, &result.fn_names),
         }
     }
+    return result;
 }
 
 fn sema_fn_decl(

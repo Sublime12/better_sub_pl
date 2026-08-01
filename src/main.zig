@@ -11,6 +11,7 @@ const Lexer = lexer_pkg.Lexer;
 const Type = types_pkg.Type;
 const FnInfo = types_pkg.FnInfo;
 const SemaErr = sema_pkg.SemaErr;
+const SemaResult = sema_pkg.SemaResult;
 const FnInfoDecl = ast_pkg.FnSignDecl;
 
 const parse = parser_pkg.parse;
@@ -57,13 +58,10 @@ pub fn main(init: std.process.Init) !void {
 
     const ast = try parse(&l, alloc);
 
-    var types: std.ArrayList(Type) = .empty;
-    var fn_names: std.ArrayList(FnInfoDecl) = .empty;
-
-    // var context: SemaContext = null;
+    var sema_result: ?SemaResult = null;
 
     if (options.sema) {
-        sema(alloc, &ast, &types, &fn_names) catch |err| {
+        sema_result = sema(alloc, &ast) catch |err| {
             switch (err) {
                 SemaErr.UndeclaredVar => std.debug.print("Call to undeclared var", .{}),
                 SemaErr.CallUnknownFunction => std.debug.print("unknowns function", .{}),
@@ -76,7 +74,7 @@ pub fn main(init: std.process.Init) !void {
     var assembly: std.Io.Writer.Allocating = .init(alloc);
 
     if (options.gen) {
-        try gen(alloc, &assembly.writer, ast, types);
+        try gen(alloc, &assembly.writer, ast, sema_result.?.types);
 
         const program_text = assembly.toArrayList().items;
         std.debug.print("generated program: \n==========\n{s}\n", .{program_text});

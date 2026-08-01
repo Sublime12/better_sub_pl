@@ -5,10 +5,13 @@ const parser_pkg = @import("parser.zig");
 const sema_pkg = @import("sema.zig");
 const codegen_pkg = @import("codegen.zig");
 const types_pkg = @import("type.zig");
+const ast_pkg = @import("ast.zig");
 
 const Lexer = lexer_pkg.Lexer;
 const Type = types_pkg.Type;
+const FnInfo = types_pkg.FnInfo;
 const SemaErr = sema_pkg.SemaErr;
+const FnInfoDecl = ast_pkg.FnSignDecl;
 
 const parse = parser_pkg.parse;
 const sema = sema_pkg.sema;
@@ -55,9 +58,12 @@ pub fn main(init: std.process.Init) !void {
     const ast = try parse(&l, alloc);
 
     var types: std.ArrayList(Type) = .empty;
+    var fn_names: std.ArrayList(FnInfoDecl) = .empty;
+
+    // var context: SemaContext = null;
 
     if (options.sema) {
-        sema(alloc, &ast, &types) catch |err| {
+        sema(alloc, &ast, &types, &fn_names) catch |err| {
             switch (err) {
                 SemaErr.UndeclaredVar => std.debug.print("Call to undeclared var", .{}),
                 SemaErr.CallUnknownFunction => std.debug.print("unknowns function", .{}),

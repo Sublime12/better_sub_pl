@@ -10,6 +10,7 @@ const Allocator = std.mem.Allocator;
 const Ast = ast_pkg.Ast;
 const FnDecl = ast_pkg.FnDecl;
 const Arg = ast_pkg.Arg;
+const FnInfoDecl = ast_pkg.FnSignDecl;
 const Expr = ast_pkg.Expr;
 const BlockStmt = ast_pkg.BlockStmt;
 const Type = types_pkg.Type;
@@ -23,16 +24,21 @@ pub const SemaErr = error{
     UndeclaredVar,
 };
 
-pub fn sema(alloc: Allocator, ast: *const Ast, types: *std.ArrayList(Type)) SemaErr!void {
+pub fn sema(
+    alloc: Allocator,
+    ast: *const Ast,
+    types: *std.ArrayList(Type),
+    fn_names: *std.ArrayList(FnInfoDecl),
+) SemaErr!void {
     try register_common_types(alloc, types);
 
-    var fn_names: std.ArrayList([]const u8) = .empty;
+    // var fn_names: std.ArrayList([]const u8) = .empty;
     defer fn_names.deinit(alloc);
-    // register fn names
+    // register fn signatures
     for (ast.decls.items) |decl| {
         switch (decl) {
             .fn_decl => |fn_decl| {
-                try fn_names.append(alloc, fn_decl.name);
+                try fn_names.append(alloc, fn_decl.fn_sign);
             },
         }
     }
@@ -47,12 +53,12 @@ pub fn sema(alloc: Allocator, ast: *const Ast, types: *std.ArrayList(Type)) Sema
 fn sema_fn_decl(
     alloc: Allocator,
     fn_decl: FnDecl,
-    fn_names: std.ArrayList([]const u8),
+    fn_names: *const std.ArrayList(FnInfoDecl),
 ) !void {
     var decl_vars: std.ArrayList(Arg) = .empty;
     defer decl_vars.deinit(alloc);
 
-    try decl_vars.appendSlice(alloc, fn_decl.args.items);
+    try decl_vars.appendSlice(alloc, fn_decl.fn_sign.args.items);
 
     try sema_block(alloc, fn_decl.body, &decl_vars, fn_names);
 }
@@ -61,7 +67,7 @@ fn sema_block(
     alloc: Allocator,
     block: BlockStmt,
     decl_vars: *std.ArrayList(Arg),
-    fn_names: std.ArrayList([]const u8),
+    fn_names: *const std.ArrayList(FnInfoDecl),
 ) !void {
     const length = decl_vars.items.len;
     // remove added elements on out
@@ -88,7 +94,7 @@ fn sema_block(
 fn sema_expr(
     expr: Expr,
     decl_vars: *std.ArrayList(Arg),
-    funs: std.ArrayList([]const u8),
+    funs: *const std.ArrayList(FnInfoDecl),
 ) SemaErr!void {
     switch (expr.as) {
         .fn_call => |fn_call| {
@@ -137,14 +143,14 @@ fn register_common_types(alloc: Allocator, types: *std.ArrayList(Type)) !void {
         .size = 1,
         .childrens = .empty,
     };
-    
+
     try types.append(alloc, i32_t);
     try types.append(alloc, u8_t);
 }
 
-fn contains_str(args: [][]const u8, needle: []const u8) bool {
+fn contains_str(args: []FnInfoDecl, needle: []const u8) bool {
     for (args) |arg| {
-        if (std.mem.eql(u8, arg, needle)) return true;
+        if (std.mem.eql(u8, arg.name, needle)) return true;
     }
     return false;
 }

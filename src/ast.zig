@@ -42,10 +42,12 @@ pub const ProgramDecl = union(ProgramDeclTag) {
         return_type: []const u8,
     ) ProgramDecl {
         return .{ .fn_decl = .{
-            .name = name,
-            .args = args,
+            .fn_sign = .{
+                .name = name,
+                .args = args,
+                .return_type = return_type,
+            },
             .body = body,
-            .return_type = return_type,
         } };
     }
 
@@ -56,23 +58,27 @@ pub const ProgramDecl = union(ProgramDeclTag) {
     }
 };
 
+pub const FnSignDecl = struct {
+    name: []const u8,
+    args: std.ArrayList(Arg),
+    return_type: []const u8,
+};
+
 pub const FnDecl = struct {
     const Self = @This();
 
-    name: []const u8,
-    args: std.ArrayList(Arg),
+    fn_sign: FnSignDecl,
     body: BlockStmt,
-    return_type: []const u8,
 
     pub fn print(self: Self, w: *Writer, indent: usize) void {
         print_nindent(w, indent);
-        w.print("fn {s}(", .{self.name}) catch unreachable;
-        for (self.args.items, 0..) |arg, i| {
+        w.print("fn {s}(", .{self.fn_sign.name}) catch unreachable;
+        for (self.fn_sign.args.items, 0..) |arg, i| {
             w.print("{s}: {s}", .{ arg.name, arg.type_ }) catch unreachable;
-            if (i < self.args.items.len - 1) w.print(", ", .{}) catch unreachable;
+            if (i < self.fn_sign.args.items.len - 1) w.print(", ", .{}) catch unreachable;
         }
 
-        w.print(") {s} {{\n", .{self.return_type}) catch unreachable;
+        w.print(") {s} {{\n", .{self.fn_sign.return_type}) catch unreachable;
 
         for (self.body.stmts.items) |stmt| {
             stmt.print(w, indent + 1);
@@ -201,7 +207,7 @@ const BoolExpr = struct {
     value: bool,
 };
 
-const FnCallExpr = struct {
+pub const FnCallExpr = struct {
     const Self = @This();
 
     name: []const u8,

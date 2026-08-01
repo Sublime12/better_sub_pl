@@ -9,6 +9,7 @@ const Type = types_pkg.Type;
 
 const Ast = ast_pkg.Ast;
 const FnDecl = ast_pkg.FnDecl;
+const FnCallExpr = ast_pkg.FnCallExpr;
 
 const assert = std.debug.assert;
 const panic = std.debug.panic;
@@ -47,7 +48,7 @@ const Var = struct {
 };
 
 fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Type)) !void {
-    print(w, "{s}:\n", .{fn_decl.name});
+    print(w, "{s}:\n", .{fn_decl.fn_sign.name});
 
     const prelude =
         \\  push rbp
@@ -56,7 +57,7 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Ty
     ;
     print(w, "{s}", .{prelude});
 
-    assert(fn_decl.args.items.len == 0);
+    assert(fn_decl.fn_sign.args.items.len == 0);
 
     var vars: std.ArrayList(Var) = .empty;
     var current_offset: usize = 0;
@@ -83,15 +84,23 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Ty
     for (fn_decl.body.stmts.items) |stmt| {
         switch (stmt) {
             .declare_and_assign => |decl_assign| {
-                assert(std.meta.activeTag(decl_assign.value.as) == .arith);
-                const var_ = get_var(vars.items, decl_assign.var_);
-                const type_ = get_type(types.items, decl_assign.type_);
-                assert(var_ != null);
-                print(w, "  mov {s} ptr [rbp - {}], {}\n", .{
-                    size_mov(type_.?.size),
-                    var_.?.offset,
-                    decl_assign.value.as.arith.value,
-                });
+                // assert(std.meta.activeTag(decl_assign.value.as) == .arith);
+                switch (decl_assign.value.as) {
+                    .arith => |arith| {
+                        const var_ = get_var(vars.items, decl_assign.var_);
+                        const type_ = get_type(types.items, decl_assign.type_);
+                        assert(var_ != null);
+                        print(w, "  mov {s} ptr [rbp - {}], {}\n", .{
+                            size_mov(type_.?.size),
+                            var_.?.offset,
+                            arith.value,
+                        });
+                    },
+                    .fn_call => |fn_call| {
+                        try gen_fn_call_expr(alloc, w, fn_call, types);
+                    },
+                    .bool_, .str, .var_ => unreachable,
+                }
             },
             else => {},
         }
@@ -106,11 +115,21 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Ty
     print(w, "{s}", .{teardown});
 }
 
+fn gen_fn_call_expr(alloc: Allocator, w: *Writer, fn_call: FnCallExpr, types: std.ArrayList(Type)) !void {
+    // alloc all params in current stack
+    // just return value in parent stack
+    _ = alloc;
+    _ = w;
+    _ = fn_call;
+    _ = types;
+    unreachable;
+}
+
 fn size_mov(size: usize) []const u8 {
-    return switch(size) {
+    return switch (size) {
         1 => "byte",
         4 => "dword",
-        else => panic("mov prefix not defined for {}",.{size}),
+        else => panic("mov prefix not defined for {}", .{size}),
     };
 }
 

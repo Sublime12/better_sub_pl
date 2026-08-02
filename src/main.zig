@@ -74,7 +74,7 @@ pub fn main(init: std.process.Init) !void {
     var assembly: std.Io.Writer.Allocating = .init(alloc);
 
     if (options.gen) {
-        try gen(alloc, &assembly.writer, ast, sema_result.?.types);
+        try gen(alloc, &assembly.writer, ast, sema_result.?);
 
         const program_text = assembly.toArrayList().items;
         std.debug.print("generated program: \n==========\n{s}\n", .{program_text});

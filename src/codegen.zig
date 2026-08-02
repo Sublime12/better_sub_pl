@@ -2,6 +2,7 @@ const std = @import("std");
 
 const ast_pkg = @import("ast.zig");
 const types_pkg = @import("type.zig");
+const sema_pkg = @import("sema.zig");
 
 const Writer = std.Io.Writer;
 const Allocator = std.mem.Allocator;
@@ -10,11 +11,12 @@ const Type = types_pkg.Type;
 const Ast = ast_pkg.Ast;
 const FnDecl = ast_pkg.FnDecl;
 const FnCallExpr = ast_pkg.FnCallExpr;
+const SemaResult = sema_pkg.SemaResult;
 
 const assert = std.debug.assert;
 const panic = std.debug.panic;
 
-pub fn gen(alloc: Allocator, w: *Writer, ast: Ast, types: std.ArrayList(Type)) !void {
+pub fn gen(alloc: Allocator, w: *Writer, ast: Ast, sema: SemaResult) !void {
     print(
         w,
         \\.intel_syntax noprefix
@@ -33,7 +35,7 @@ pub fn gen(alloc: Allocator, w: *Writer, ast: Ast, types: std.ArrayList(Type)) !
 
     for (ast.decls.items) |decl| {
         switch (decl) {
-            .fn_decl => |fn_decl| try gen_fn(alloc, w, fn_decl, types),
+            .fn_decl => |fn_decl| try gen_fn(alloc, w, fn_decl, sema),
         }
     }
 }
@@ -47,7 +49,7 @@ const Var = struct {
     }
 };
 
-fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Type)) !void {
+fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, sema: SemaResult) !void {
     print(w, "{s}:\n", .{fn_decl.fn_sign.name});
 
     const prelude =
@@ -66,7 +68,7 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Ty
         switch (stmt) {
             .declare_and_assign => |var_decl| {
                 // assert(std.mem.eql(u8, var_decl.type_, "i32"));
-                const type_ = get_type(types.items, var_decl.type_);
+                const type_ = get_type(sema.types.items, var_decl.type_);
                 if (type_ == null) {
                     std.debug.panic("type {s} not found", .{var_decl.type_});
                 }
@@ -88,8 +90,9 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Ty
                 switch (decl_assign.value.as) {
                     .arith => |arith| {
                         const var_ = get_var(vars.items, decl_assign.var_);
-                        const type_ = get_type(types.items, decl_assign.type_);
+                        const type_ = get_type(sema.types.items, decl_assign.type_);
                         assert(var_ != null);
+                        assert(type_ != null);
                         print(w, "  mov {s} ptr [rbp - {}], {}\n", .{
                             size_mov(type_.?.size),
                             var_.?.offset,
@@ -97,7 +100,7 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Ty
                         });
                     },
                     .fn_call => |fn_call| {
-                        try gen_fn_call_expr(alloc, w, fn_call, types);
+                        try gen_fn_call_expr(alloc, w, fn_call, sema);
                     },
                     .bool_, .str, .var_ => unreachable,
                 }
@@ -115,13 +118,13 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, types: std.ArrayList(Ty
     print(w, "{s}", .{teardown});
 }
 
-fn gen_fn_call_expr(alloc: Allocator, w: *Writer, fn_call: FnCallExpr, types: std.ArrayList(Type)) !void {
+fn gen_fn_call_expr(alloc: Allocator, w: *Writer, fn_call: FnCallExpr, sema: SemaResult) !void {
     // alloc all params in current stack
     // just return value in parent stack
     _ = alloc;
     _ = w;
     _ = fn_call;
-    _ = types;
+    _ = sema;
     unreachable;
 }
 

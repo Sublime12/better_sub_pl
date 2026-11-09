@@ -34,4 +34,21 @@ pub fn build(b: *std.Build) void {
 
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_exe_tests.step);
+
+    const functional_tests = b.addExecutable(.{
+        .name = "functional_tests",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/functional_tests.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{},
+        }),
+    });
+    b.installArtifact(functional_tests);
+
+    const run_functional_tests = b.addRunArtifact(functional_tests);
+    run_functional_tests.step.dependOn(b.getInstallStep());
+
+    const functional_test_step = b.step("functional-test", "Run functional tests");
+    functional_test_step.dependOn(&run_functional_tests.step);
 }

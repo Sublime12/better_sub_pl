@@ -39,7 +39,7 @@ pub const ProgramDecl = union(ProgramDeclTag) {
         name: []const u8,
         args: std.ArrayList(Arg),
         body: BlockStmt,
-        return_type: []const u8,
+        return_type: ?[]const u8,
     ) ProgramDecl {
         return .{ .fn_decl = .{
             .fn_sign = .{
@@ -61,7 +61,7 @@ pub const ProgramDecl = union(ProgramDeclTag) {
 pub const FnSignDecl = struct {
     name: []const u8,
     args: std.ArrayList(Arg),
-    return_type: []const u8,
+    return_type: ?[]const u8,
 };
 
 pub const FnDecl = struct {
@@ -78,7 +78,11 @@ pub const FnDecl = struct {
             if (i < self.fn_sign.args.items.len - 1) w.print(", ", .{}) catch unreachable;
         }
 
-        w.print(") {s} {{\n", .{self.fn_sign.return_type}) catch unreachable;
+        if (self.fn_sign.return_type) |rt| {
+            w.print(") {s} {{\n", .{rt}) catch unreachable;
+        } else {
+            w.print(") {{\n", .{}) catch unreachable;
+        }
 
         for (self.body.stmts.items) |stmt| {
             stmt.print(w, indent + 1);
@@ -169,7 +173,7 @@ pub const Expr = struct {
         file_content: []const u8,
     ) Expr {
         return .{
-            .as = .{ .arith = .{ .value = integer } },
+            .as = .{ .arith = .{ .i32_value = integer } },
             .file_path = file_path,
             .cursor = cursor,
             .file_content = file_content,
@@ -182,7 +186,7 @@ pub const Expr = struct {
             .fn_call => |fn_call| fn_call.print(w),
             .var_ => |var_| w.print("{s}", .{var_}) catch unreachable,
             .arith => |arith| {
-                w.print("{}", .{arith.value}) catch unreachable;
+                w.print("{}", .{arith.i32_value}) catch unreachable;
             },
             .bool_ => panic("print unimplemented for bool", .{}),
         }
@@ -199,8 +203,14 @@ pub const ExprAs = union(ExprTag) {
     var_: []const u8,
 };
 
-const ArithExpr = struct {
-    value: i32,
+const ArithTag = enum {
+    i32_value,
+    u8_t,
+};
+
+const ArithExpr = union(ArithTag) {
+    i32_value: i32,
+    u8_t: u8,
 };
 
 const BoolExpr = struct {

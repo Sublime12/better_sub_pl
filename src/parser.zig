@@ -64,10 +64,16 @@ fn parse_fn_decl(l: *Lexer, alloc: Allocator) !ProgramDecl {
     }
 
     l.eat(.cparen);
-    l.expect(.id);
-    const return_type = l.name.as_str(l.content);
-    l.eat(.id);
-    // end parse fn signature
+    var return_type: ?[]const u8 = null;
+    if (l.token != .obrace) {
+        l.expect(.id);
+        const rt = l.name.as_str(l.content);
+        if (std.mem.eql(u8, rt, "void")) {
+            panic("void return type must not be mentioned", .{});
+        }
+        return_type = rt;
+        l.eat(.id);
+    }
 
     // parse fn body
     const body = try parse_block_stmt(l, alloc);

@@ -25,6 +25,7 @@ const assert = std.debug.assert;
 const Options = struct {
     sema: bool,
     gen: bool,
+    ast: bool,
     file_path: ?[]const u8,
 };
 
@@ -39,6 +40,7 @@ pub fn main(init: std.process.Init) !void {
     var options: Options = .{
         .sema = false,
         .gen = false,
+        .ast = false,
         .file_path = null,
     };
     parse_args(args, &options);
@@ -57,6 +59,14 @@ pub fn main(init: std.process.Init) !void {
     );
 
     const ast = try parse(&l, alloc);
+
+    if (options.ast) {
+        var ast_writer: std.Io.Writer.Allocating = .init(alloc);
+        defer ast_writer.deinit();
+        ast.print(&ast_writer.writer);
+
+        std.debug.print("ast: \n{s}\n=================\n", .{ast_writer.toArrayList().items});
+    }
 
     var sema_result: ?SemaResult = null;
 
@@ -117,6 +127,8 @@ fn parse_args(args: []const []const u8, options: *Options) void {
             options.gen = true;
             // if --gen provided, do also the sema
             options.sema = true;
+        } else if (std.mem.eql(u8, arg, "--ast")) {
+            options.ast = true;
         } else if (std.mem.startsWith(u8, arg, "--")) {
             std.debug.print("unknowns arg: {s}\n", .{arg});
             std.process.exit(1);

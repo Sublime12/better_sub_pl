@@ -28,6 +28,17 @@ pub fn gen(alloc: Allocator, w: *Writer, ast: Ast, sema: SemaResult) !void {
         \\  mov eax, 60
         \\  xor edi, edi
         \\  syscall
+        \\put_char:
+        \\  push rbp
+        \\  mov rbp, rsp
+        \\  mov eax, 1
+        \\  mov edi, 1
+        \\  lea rsi, [rbp + 16]
+        \\  mov edx, 1
+        \\  syscall
+        \\  mov rsp, rbp
+        \\  pop rbp
+        \\  ret
         \\
     ,
         .{},
@@ -59,25 +70,22 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, sema: SemaResult) !void
     ;
     print(w, "{s}", .{prelude});
 
-    assert(fn_decl.fn_sign.args.items.len == 0);
-
     var vars: std.ArrayList(Var) = .empty;
     var current_offset: usize = 0;
 
     for (fn_decl.body.stmts.items) |stmt| {
         switch (stmt) {
             .declare_and_assign => |var_decl| {
-                // assert(std.mem.eql(u8, var_decl.type_, "i32"));
                 const type_ = get_type(sema.types.items, var_decl.type_);
                 if (type_ == null) {
-                    std.debug.panic("type {s} not found", .{var_decl.type_});
+                    panic("type {s} not found", .{var_decl.type_});
                 }
                 current_offset += type_.?.size;
                 const var_ = Var.create(var_decl.var_, current_offset);
                 try vars.append(alloc, var_);
             },
-            .if_ => panic("gen not implemented for if_", .{}),
-            .assign, .no_assign => {},
+            .no_assign => {},
+            .if_, .assign => panic("gen not implemented for if_", .{}),
         }
     }
 
@@ -86,7 +94,6 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, sema: SemaResult) !void
     for (fn_decl.body.stmts.items) |stmt| {
         switch (stmt) {
             .declare_and_assign => |decl_assign| {
-                // assert(std.meta.activeTag(decl_assign.value.as) == .arith);
                 switch (decl_assign.value.as) {
                     .arith => |arith| {
                         const var_ = get_var(vars.items, decl_assign.var_);
@@ -96,16 +103,25 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, sema: SemaResult) !void
                         print(w, "  mov {s} ptr [rbp - {}], {}\n", .{
                             size_mov(type_.?.size),
                             var_.?.offset,
-                            arith.value,
+                            arith.i32_value,
                         });
                     },
                     .fn_call => |fn_call| {
                         try gen_fn_call_expr(alloc, w, fn_call, sema);
                     },
-                    .bool_, .str, .var_ => unreachable,
+                    .bool_, .str, .var_ => panic("panic with {}", .{std.meta.activeTag(decl_assign.value.as)}),
                 }
             },
-            else => {},
+            .no_assign => |no_assign| {
+                switch (no_assign.rvalue.as) {
+                    .fn_call => |fn_call| try gen_fn_call_expr(alloc, w, fn_call, sema),
+                    .arith, .bool_, .str, .var_ => panic(
+                        "panic with {}",
+                        .{std.meta.activeTag(no_assign.rvalue.as)},
+                    ),
+                }
+            },
+            .if_, .assign => panic("gen not implemented for if_", .{}),
         }
     }
 
@@ -119,13 +135,20 @@ fn gen_fn(alloc: Allocator, w: *Writer, fn_decl: FnDecl, sema: SemaResult) !void
 }
 
 fn gen_fn_call_expr(alloc: Allocator, w: *Writer, fn_call: FnCallExpr, sema: SemaResult) !void {
-    // alloc all params in current stack
-    // just return value in parent stack
     _ = alloc;
-    _ = w;
-    _ = fn_call;
     _ = sema;
-    unreachable;
+
+    var offset: usize = 0;
+
+    print(w, "  sub rsp, 16\n", .{});
+    for (fn_call.args.items) |arg| {
+        assert(std.meta.activeTag(arg.as) == .arith);
+        const i32_value = arg.as.arith.i32_value;
+        print(w, "  mov byte ptr [rsp + {}], {}\n", .{ offset, i32_value });
+        offset += 4;
+    }
+    print(w, "  call {s}\n", .{fn_call.name});
+    print(w, "  add rsp, 16\n", .{});
 }
 
 fn size_mov(size: usize) []const u8 {
@@ -137,22 +160,21 @@ fn size_mov(size: usize) []const u8 {
 }
 
 fn get_type(types: []const Type, needle: []const u8) ?Type {
-    if (types.len == 0) return null;
-    var i: usize = types.len - 1;
-    while (i >= 0) {
+    var i: usize = types.len;
+    while (i > 0) {
+        i -= 1;
         const cur = types[i];
         if (std.mem.eql(u8, cur.name, needle)) return cur;
-        i -= 1;
     }
     return null;
 }
 
 fn get_var(vars: []const Var, needle: []const u8) ?Var {
-    var i: usize = vars.len - 1;
-    while (i >= 0) {
+    var i: usize = vars.len;
+    while (i > 0) {
+        i -= 1;
         const cur = vars[i];
         if (std.mem.eql(u8, cur.name, needle)) return cur;
-        i -= 1;
     }
     return null;
 }

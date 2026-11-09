@@ -29,23 +29,22 @@ pub const SemaResult = struct {
     fn_names: std.ArrayList(FnInfoDecl),
 
     pub fn init() SemaResult {
-        return .{ .types = .empty, .fn_names = .empty, }; 
+        return .{
+            .types = .empty,
+            .fn_names = .empty,
+        };
     }
 };
 
 pub fn sema(
     alloc: Allocator,
     ast: *const Ast,
-    // types: *std.ArrayList(Type),
-    // fn_names: *std.ArrayList(FnInfoDecl),
 ) SemaErr!SemaResult {
     var result = SemaResult.init();
 
     try register_common_types(alloc, &result.types);
+    try register_common_fns(alloc, &result.fn_names);
 
-    // var fn_names: std.ArrayList([]const u8) = .empty;
-    defer result.fn_names.deinit(alloc);
-    // register fn signatures
     for (ast.decls.items) |decl| {
         switch (decl) {
             .fn_decl => |fn_decl| {
@@ -158,6 +157,17 @@ fn register_common_types(alloc: Allocator, types: *std.ArrayList(Type)) !void {
 
     try types.append(alloc, i32_t);
     try types.append(alloc, u8_t);
+}
+
+fn register_common_fns(alloc: Allocator, fn_names: *std.ArrayList(FnInfoDecl)) !void {
+    var args: std.ArrayList(Arg) = .empty;
+    try args.append(alloc, .{ .name = "c", .type_ = "u8" });
+
+    try fn_names.append(alloc, .{
+        .name = "put_char",
+        .args = args,
+        .return_type = null,
+    });
 }
 
 fn contains_str(args: []FnInfoDecl, needle: []const u8) bool {

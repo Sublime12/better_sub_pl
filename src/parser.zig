@@ -64,10 +64,16 @@ fn parse_fn_decl(l: *Lexer, alloc: Allocator) !ProgramDecl {
     }
 
     l.eat(.cparen);
-    l.expect(.id);
-    const return_type = l.name.as_str(l.content);
-    l.eat(.id);
-    // end parse fn signature
+    var return_type: ?[]const u8 = null;
+    if (l.token != .obrace) {
+        l.expect(.id);
+        const rt = l.name.as_str(l.content);
+        if (std.mem.eql(u8, rt, "void")) {
+            panic("void return type must not be mentioned", .{});
+        }
+        return_type = rt;
+        l.eat(.id);
+    }
 
     // parse fn body
     const body = try parse_block_stmt(l, alloc);
@@ -84,6 +90,8 @@ fn parse_stmt(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Stmt {
     } else if (l.token == .if_) {
         return parse_if_stmt(l, alloc);
     } else {
+        // can pe lvalue = rvalue
+        // or rvalue
         const stmt = parse_no_var_decl_stmt(l, alloc);
         l.eat(.semicolon);
         return stmt;
@@ -91,8 +99,13 @@ fn parse_stmt(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Stmt {
 }
 
 fn parse_no_var_decl_stmt(l: *Lexer, alloc: Allocator) !Stmt {
-    const expr = try parse_expr(l, alloc);
-    return .{ .no_assign = .{ .value = expr } };
+    const lhs = try parse_expr(l, alloc);
+    if (l.token == .assign) {
+        l.eat(.assign);
+        const rhs = try parse_expr(l, alloc);
+        return Stmt.create_assign(lhs, rhs);
+    }
+    return Stmt.create_no_assign(lhs);
 }
 
 fn parse_var_decl_stmt(l: *Lexer, alloc: Allocator) !Stmt {
@@ -106,11 +119,7 @@ fn parse_var_decl_stmt(l: *Lexer, alloc: Allocator) !Stmt {
     l.eat(.id);
     l.eat(.assign);
     const expr = try parse_expr(l, alloc);
-    return .{ .assign = .{
-        .var_ = name,
-        .type_ = type_,
-        .value = expr,
-    } };
+    return Stmt.create_declare_and_assign(name, type_, expr);
 }
 
 fn parse_if_stmt(l: *Lexer, alloc: Allocator) !Stmt {
@@ -166,14 +175,24 @@ fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         }
         const name = l.name.as_str(l.content);
         l.eat(.id);
-        return Expr.create_var(
+        const var_ = Expr.create_var(
             name,
             l.file_path,
             l.previous_cursor,
             l.content,
         );
+        return var_;
     } else if (l.token == .str) {
         return parse_str(l);
+    } else if (l.token == .int) {
+        const integer = l.integer_value.?;
+        l.eat(.int);
+        return Expr.create_int(
+            integer,
+            l.file_path,
+            l.previous_cursor,
+            l.content,
+        );
     }
     panic("parse_expr panics with {}, name: {s}", .{ l.token, l.name.as_str(l.content) });
 }

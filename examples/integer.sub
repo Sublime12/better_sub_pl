@@ -1,0 +1,13 @@
+fn main() void {
+  var sub: i32 = 15;
+  var b: i32 = 84;
+  var c: u8 = 6000;
+  # var d: i32 = 12;
+  # sub = 17;
+}
+# push rbp
+# mov rsp, rbp
+# sub 4, rsp
+# mov word ptr 15, [rbp - 4]
+# mov word ptr 17, [rbp - 4]
+# syscall exit because main

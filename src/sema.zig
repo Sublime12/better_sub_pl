@@ -2,6 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const ast_pkg = @import("ast.zig");
+const types_pkg = @import("type.zig");
 const errors_pkg = @import("errors.zig");
 
 const Allocator = std.mem.Allocator;
@@ -9,8 +10,10 @@ const Allocator = std.mem.Allocator;
 const Ast = ast_pkg.Ast;
 const FnDecl = ast_pkg.FnDecl;
 const Arg = ast_pkg.Arg;
+const FnInfoDecl = ast_pkg.FnSignDecl;
 const Expr = ast_pkg.Expr;
 const BlockStmt = ast_pkg.BlockStmt;
+const Type = types_pkg.Type;
 
 const panic = std.debug.panic;
 const print_error_line = errors_pkg.print_error_line;
@@ -21,34 +24,52 @@ pub const SemaErr = error{
     UndeclaredVar,
 };
 
-pub fn sema(alloc: Allocator, ast: *const Ast) SemaErr!void {
-    var fn_names: std.ArrayList([]const u8) = .empty;
-    defer fn_names.deinit(alloc);
-    // register fn names
+pub const SemaResult = struct {
+    types: std.ArrayList(Type),
+    fn_names: std.ArrayList(FnInfoDecl),
+
+    pub fn init() SemaResult {
+        return .{
+            .types = .empty,
+            .fn_names = .empty,
+        };
+    }
+};
+
+pub fn sema(
+    alloc: Allocator,
+    ast: *const Ast,
+) SemaErr!SemaResult {
+    var result = SemaResult.init();
+
+    try register_common_types(alloc, &result.types);
+    try register_common_fns(alloc, &result.fn_names);
+
     for (ast.decls.items) |decl| {
         switch (decl) {
             .fn_decl => |fn_decl| {
-                try fn_names.append(alloc, fn_decl.name);
+                try result.fn_names.append(alloc, fn_decl.fn_sign);
             },
         }
     }
 
     for (ast.decls.items) |decl| {
         switch (decl) {
-            .fn_decl => |fn_decl| try sema_fn_decl(alloc, fn_decl, fn_names),
+            .fn_decl => |fn_decl| try sema_fn_decl(alloc, fn_decl, &result.fn_names),
         }
     }
+    return result;
 }
 
 fn sema_fn_decl(
     alloc: Allocator,
     fn_decl: FnDecl,
-    fn_names: std.ArrayList([]const u8),
+    fn_names: *const std.ArrayList(FnInfoDecl),
 ) !void {
     var decl_vars: std.ArrayList(Arg) = .empty;
     defer decl_vars.deinit(alloc);
 
-    try decl_vars.appendSlice(alloc, fn_decl.args.items);
+    try decl_vars.appendSlice(alloc, fn_decl.fn_sign.args.items);
 
     try sema_block(alloc, fn_decl.body, &decl_vars, fn_names);
 }
@@ -57,22 +78,22 @@ fn sema_block(
     alloc: Allocator,
     block: BlockStmt,
     decl_vars: *std.ArrayList(Arg),
-    fn_names: std.ArrayList([]const u8),
+    fn_names: *const std.ArrayList(FnInfoDecl),
 ) !void {
     const length = decl_vars.items.len;
     // remove added elements on out
     defer decl_vars.items.len = length;
     for (block.stmts.items) |stmt| {
         switch (stmt) {
-            .assign => |assign| {
+            .declare_and_assign => |assign| {
                 const arg: Arg = .{
                     .name = assign.var_,
                     .type_ = assign.type_,
                 };
                 try decl_vars.append(alloc, arg);
             },
-            .no_assign => |no_assign| try sema_expr(no_assign.value, decl_vars, fn_names),
-
+            .assign => unreachable,
+            .no_assign => |no_assign| try sema_expr(no_assign.rvalue, decl_vars, fn_names),
             .if_ => |if_| {
                 try sema_expr(if_.if_eval, decl_vars, fn_names);
                 try sema_block(alloc, if_.if_body, decl_vars, fn_names);
@@ -84,7 +105,7 @@ fn sema_block(
 fn sema_expr(
     expr: Expr,
     decl_vars: *std.ArrayList(Arg),
-    funs: std.ArrayList([]const u8),
+    funs: *const std.ArrayList(FnInfoDecl),
 ) SemaErr!void {
     switch (expr.as) {
         .fn_call => |fn_call| {
@@ -122,9 +143,36 @@ fn sema_expr(
     }
 }
 
-fn contains_str(args: [][]const u8, needle: []const u8) bool {
+fn register_common_types(alloc: Allocator, types: *std.ArrayList(Type)) !void {
+    const i32_t: Type = .{
+        .name = "i32",
+        .size = 4,
+        .childrens = .empty,
+    };
+    const u8_t: Type = .{
+        .name = "u8",
+        .size = 1,
+        .childrens = .empty,
+    };
+
+    try types.append(alloc, i32_t);
+    try types.append(alloc, u8_t);
+}
+
+fn register_common_fns(alloc: Allocator, fn_names: *std.ArrayList(FnInfoDecl)) !void {
+    var args: std.ArrayList(Arg) = .empty;
+    try args.append(alloc, .{ .name = "c", .type_ = "u8" });
+
+    try fn_names.append(alloc, .{
+        .name = "put_char",
+        .args = args,
+        .return_type = null,
+    });
+}
+
+fn contains_str(args: []FnInfoDecl, needle: []const u8) bool {
     for (args) |arg| {
-        if (std.mem.eql(u8, arg, needle)) return true;
+        if (std.mem.eql(u8, arg.name, needle)) return true;
     }
     return false;
 }

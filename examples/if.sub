@@ -20,3 +20,12 @@ fn main() void {
         var else_inner: f32 = "for now, expr can just be strings";
     }
 }
+
+fn fn_call() void {}
+fn print() void {}
+fn foo() void {}
+fn bar() void {}
+fn fn_else() void {}
+fn bazz() void {}
+fn fuzz() void {}
+
